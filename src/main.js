@@ -3,7 +3,8 @@
 import {
   createState, resizeState, updateState,
   startNextWave, restartRun,
-  investRole, getRoleNextCost,
+  investRole, getRoleNextCost, getRoleNextLarvaeCost,
+  chooseSpecAndRankUp, canInvest,
   setModifier, pickModifierOptions,
   applyBoon, pickBoonOptions,
   setPriorityTarget,
@@ -200,9 +201,11 @@ function renderRolesPanel() {
   for (const key of ROLE_ORDER) {
     const role = ROLES[key];
     const cur = state.roles[key].rank;
-    const cost = getRoleNextCost(state, key);
-    const isMax = cost == null;
-    const canBuy = !isMax && state.honey >= cost;
+    const honeyCost = getRoleNextCost(state, key);
+    const larvaeCost = getRoleNextLarvaeCost(state, key);
+    const isMax = honeyCost == null;
+    const isSpecChoice = !isMax && (cur + 1 === role.maxRank) && role.specs?.length;
+    const canBuy = !isMax && canInvest(state, key);
 
     const card = document.createElement('div');
     card.className = 'role-card' + (isMax ? ' maxed' : '');
@@ -210,6 +213,46 @@ function renderRolesPanel() {
     const dotsHtml = Array.from({ length: role.maxRank }, (_, i) =>
       `<span class="dot${i < cur ? ' filled' : ''}"></span>`
     ).join('');
+
+    let bodyHTML = '';
+    if (isMax) {
+      // show which spec was chosen
+      const chosenSpec = role.specs?.find(s => s.id === state.roles[key].spec);
+      if (chosenSpec) {
+        bodyHTML = `
+          <div class="role-spec-locked">
+            <span class="spec-locked-name">★ ${chosenSpec.name}</span>
+            <p class="spec-locked-desc">${chosenSpec.description}</p>
+          </div>`;
+      } else {
+        bodyHTML = `<div class="role-next"><span class="role-next-text"><b>Maxed.</b></span></div>`;
+      }
+    } else if (isSpecChoice) {
+      // show 2 spec choice cards
+      const costStr = `${honeyCost} 🍯${larvaeCost ? ` · ${larvaeCost} 🐝` : ''}`;
+      bodyHTML = `
+        <div class="role-next-text"><b>Choose a path</b> <span class="role-cost ${canBuy ? '' : 'unaffordable'}">${costStr}</span></div>
+        <div class="spec-choices">
+          ${role.specs.map(s => `
+            <button class="spec-card" data-key="${key}" data-spec="${s.id}" ${canBuy ? '' : 'disabled'}>
+              <span class="spec-name">${s.name}</span>
+              <span class="spec-desc">${s.description}</span>
+            </button>
+          `).join('')}
+        </div>
+      `;
+    } else {
+      const costStr = `${honeyCost} 🍯${larvaeCost ? ` · ${larvaeCost} 🐝` : ''}`;
+      bodyHTML = `
+        <div class="role-next">
+          <span class="role-next-text">Next: <b>${describeNextEffect(key, cur)}</b></span>
+        </div>
+        <div class="role-next">
+          <span class="role-cost ${canBuy ? '' : 'unaffordable'}">${costStr}</span>
+          <button class="role-btn" data-key="${key}" ${canBuy ? '' : 'disabled'}>INVEST</button>
+        </div>
+      `;
+    }
 
     card.innerHTML = `
       <span class="role-glyph">${role.glyph}</span>
@@ -219,27 +262,30 @@ function renderRolesPanel() {
           <span class="role-rank-dots">${dotsHtml}</span>
         </div>
         <p class="role-desc">${role.description}</p>
-        ${isMax
-          ? `<div class="role-next"><span class="role-next-text"><b>Maxed.</b></span><button class="role-btn" disabled>MAX</button></div>`
-          : `<div class="role-next">
-               <span class="role-next-text">Next: <b>${describeNextEffect(key, cur)}</b></span>
-             </div>
-             <div class="role-next">
-               <span class="role-cost ${canBuy ? '' : 'unaffordable'}">${cost} 🍯</span>
-               <button class="role-btn" data-key="${key}" ${canBuy ? '' : 'disabled'}>INVEST</button>
-             </div>`}
+        ${bodyHTML}
       </div>
     `;
     rolesList.appendChild(card);
   }
 
-  // wire INVEST clicks
+  // wire normal INVEST buttons
   for (const btn of rolesList.querySelectorAll('.role-btn[data-key]')) {
     btn.addEventListener('click', () => {
       const key = btn.dataset.key;
       if (investRole(state, key)) {
         flashPill(hud.honeyPill);
-        renderRolesPanel(); // refresh costs / availability
+        renderRolesPanel();
+      }
+    });
+  }
+  // wire spec-choice buttons
+  for (const btn of rolesList.querySelectorAll('.spec-card[data-spec]')) {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.key;
+      const specId = btn.dataset.spec;
+      if (chooseSpecAndRankUp(state, key, specId)) {
+        flashPill(hud.honeyPill);
+        renderRolesPanel();
       }
     });
   }

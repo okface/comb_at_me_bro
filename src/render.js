@@ -33,7 +33,7 @@ export function render(ctx, state) {
     drawPriorityReticle(ctx, state.priorityTarget, state.elapsed);
   }
   drawFx(ctx, state);
-  drawHiveHP(ctx, state.hive);
+  drawHiveHP(ctx, state.hive, state);
   drawBanner(ctx, state);
   ctx.restore();
 }
@@ -688,8 +688,53 @@ function drawSwarmParticles(ctx, state) {
   for (const s of state.swarms) {
     if (!s.alive) continue;
     const phase = (s.x + s.y) * 0.05 + state.elapsed * 22;
-    drawTinyBee(ctx, s.x, s.y, phase);
+    if (s.meteor)      drawMeteorParticle(ctx, s, state.elapsed);
+    else if (s.echo)   drawEchoParticle(ctx, s, phase);
+    else               drawTinyBee(ctx, s.x, s.y, phase);
   }
+}
+
+// Meteor — big honey-rust ball with halo
+function drawMeteorParticle(ctx, s, elapsed) {
+  ctx.save();
+  ctx.translate(s.x, s.y);
+  // halo
+  const haloR = 14 + Math.sin(elapsed * 8) * 1.5;
+  ctx.fillStyle = 'rgba(232, 162, 74, 0.35)';
+  ctx.beginPath();
+  ctx.arc(0, 0, haloR, 0, Math.PI * 2);
+  ctx.fill();
+  // body
+  const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, 9);
+  grad.addColorStop(0, '#FBE0A0');
+  grad.addColorStop(0.6, '#F2C24A');
+  grad.addColorStop(1, '#8A3A1C');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(0, 0, 9, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#3A2818';
+  ctx.lineWidth = 1.4;
+  ctx.stroke();
+  ctx.restore();
+}
+
+// Echo — small fast honey particle with motion-trail dot
+function drawEchoParticle(ctx, s, phase) {
+  ctx.save();
+  ctx.translate(s.x, s.y);
+  ctx.fillStyle = 'rgba(247, 221, 160, 0.6)';
+  ctx.beginPath();
+  ctx.arc(0, 0, 5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#F2C24A';
+  ctx.beginPath();
+  ctx.arc(0, 0, 3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#3A2818';
+  ctx.lineWidth = 0.8;
+  ctx.stroke();
+  ctx.restore();
 }
 
 // ============================================================================
@@ -865,26 +910,24 @@ function drawFxSpawnWarn(ctx, f, k, state) {
 // ============================================================================
 // Layer 7 — HP bar (paper card pill)
 // ============================================================================
-function drawHiveHP(ctx, hive) {
+function drawHiveHP(ctx, hive, state) {
   const w = 110, h = 10;
   const x = hive.x - w / 2;
   const y = hive.y - hive.radius - 22;
-  // soft drop shadow
   ctx.fillStyle = 'rgba(58, 40, 24, 0.18)';
   ctx.fillRect(x - 3, y - 2, w + 6, h + 5);
-  // paper card
   ctx.fillStyle = PALETTE.paper;
   ctx.fillRect(x - 3, y - 3, w + 6, h + 6);
   ctx.strokeStyle = PALETTE.ink;
   ctx.lineWidth = 1.4;
   ctx.strokeRect(x - 3, y - 3, w + 6, h + 6);
-  // fill
+  // HP fill
   const pct = Math.max(0, hive.hp / hive.maxHP);
   ctx.fillStyle = pct > 0.5 ? PALETTE.honey
                 : pct > 0.25 ? PALETTE.honeyDeep
                 : PALETTE.redInk;
   ctx.fillRect(x, y, w * pct, h);
-  // segment lines (honeycomb feel)
+  // segment lines
   ctx.strokeStyle = PALETTE.ink;
   ctx.lineWidth = 0.7;
   ctx.globalAlpha = 0.45;
@@ -896,6 +939,18 @@ function drawHiveHP(ctx, hive) {
     ctx.stroke();
   }
   ctx.globalAlpha = 1;
+  // Wax HP overlay (Honeycomb Vault) — sits above HP bar as paper-light shell
+  if (state && state.waxHP > 0) {
+    const waxW = Math.min(w * 1.05, w * (state.waxHP / 60));
+    const waxY = y - 7;
+    ctx.fillStyle = PALETTE.paperShade;
+    ctx.fillRect(x - 2, waxY - 1, waxW + 4, 6);
+    ctx.fillStyle = PALETTE.honeyLight;
+    ctx.fillRect(x, waxY, waxW, 4);
+    ctx.strokeStyle = PALETTE.ink;
+    ctx.lineWidth = 0.7;
+    ctx.strokeRect(x - 2, waxY - 1, waxW + 4, 6);
+  }
 }
 
 // ============================================================================

@@ -345,8 +345,80 @@ html, body {
 }
 
 .role-card.maxed {
-  opacity: 0.7;
   background: var(--paper);
+}
+
+/* ============================================================
+   Spec choice (rank 3 fork) and locked-spec display
+   ============================================================ */
+.spec-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.spec-card {
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+  padding: 10px 12px;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: transform 0.1s ease, box-shadow 0.12s, background 0.12s;
+  box-shadow: 0 2px 0 rgba(58, 40, 24, 0.2);
+}
+
+.spec-card:hover { background: var(--paper-2, #E8DCBF); }
+.spec-card:active {
+  transform: translateY(2px);
+  box-shadow: 0 0 0 rgba(58, 40, 24, 0.2);
+}
+
+.spec-card:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background: transparent;
+}
+
+.spec-card .spec-name {
+  font-family: Georgia, 'Fraunces', serif;
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--ink);
+}
+
+.spec-card .spec-desc {
+  font-size: 10.5px;
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+
+.role-spec-locked {
+  background: var(--paper);
+  border: 1px dashed var(--ink-soft);
+  padding: 8px 10px;
+  margin-top: 6px;
+}
+
+.role-spec-locked .spec-locked-name {
+  font-family: Georgia, 'Fraunces', serif;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--honey-deep, #B66B1E);
+  display: block;
+  margin-bottom: 4px;
+}
+
+.role-spec-locked .spec-locked-desc {
+  font-size: 10.5px;
+  line-height: 1.45;
+  color: var(--ink-soft);
+  margin: 0;
 }
 
 .primary-btn {

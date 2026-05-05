@@ -32,9 +32,8 @@ export const PALETTE = {
 };
 
 export const HIVE = {
-  startHP: 100,
+  startHP: 80,        // tightened from 100 — chip damage now matters
   radius: 46,
-  // damage taken per second while an attacker is touching the entrance
   contactDPS: 6,
 };
 
@@ -82,18 +81,24 @@ export const BEEKEEPER = {
 };
 
 export const STRIKER = {
-  swarmCount: 5,           // strikers per volley
-  cooldown: 1.6,           // seconds between volleys
-  speed: 130,              // px / sec base; each bee gets a per-particle multiplier
+  swarmCount: 3,           // base — was 5; now you really want rank-1
+  cooldown: 1.8,           // a touch slower at base
+  speed: 130,
   damagePerHit: 1,
   hitRadius: 14,
   particleSize: 3.5,
   spreadRadius: 18,
-  // Swarm character — each bee gets a phase, wobble amp/freq, and speed
-  // multiplier so the cloud feels alive instead of moving as a rigid block.
-  wobbleAmpRange: [22, 60],   // px/sec perpendicular oscillation amplitude
-  wobbleFreqRange: [4, 10],   // radians/sec
+  wobbleAmpRange: [22, 60],
+  wobbleFreqRange: [4, 10],
   speedMulRange: [0.78, 1.22],
+  // Meteor Volley spec — every Nth volley
+  meteorEveryN: 4,
+  meteorDmgMul: 5,
+  meteorAoE: 64,
+  meteorSpeedMul: 0.5,
+  // Echo Sting spec
+  echoChance: 0.18,
+  echoDmgMul: 0.5,
 };
 
 // Procedural wave generator. Pacing favors density over duration —
@@ -155,14 +160,13 @@ export const TOTAL_WAVES = 10; // B2.4 ships 10; final 30 with bear+beekeeper in
 // Phase B2 — economy + role investment
 // ============================================================
 export const ECONOMY = {
-  startHoney: 50,
-  startLarvae: 3,
-  // bonus granted on wave clear (before B2.5's mutually-exclusive locks)
-  waveClearHoney: 25,
+  startHoney: 45,
+  startLarvae: 2,
+  waveClearHoney: 22,
   waveClearLarvae: 2,
-  waveClearHPRegen: 10,        // base HP healed when a wave clears
-  waveClearHPRegenArchitect: 5, // additional HP healed per architect rank
-  honeyStorageCap: 250,  // raised by Architects (B2.4)
+  waveClearHPRegen: 4,         // tightened from 10 — chip damage now hurts
+  waveClearHPRegenArchitect: 5,
+  honeyStorageCap: 220,
 };
 
 // Role definitions. Rank 0 = baseline (no investment).
@@ -174,8 +178,22 @@ export const ROLES = {
     glyph: '🍯',
     description: 'Gathers honey through the wave.',
     perRankHoneyPerSec: 0.6,
-    costs: [30, 65, 110],
+    costs:       [30, 65, 110],
+    larvaeCosts: [ 0,  0,   8],   // rank 3 demands larvae
     maxRank: 3,
+    specs: [
+      {
+        id: 'royal_reserve',
+        name: 'Royal Reserve',
+        description: 'Foragers stop ticking. Wave clears pay 1 honey per kill, per Forager rank.',
+        // implemented in game.js (custom logic)
+      },
+      {
+        id: 'pollen_storm',
+        name: 'Pollen Storm',
+        description: 'Foragers earn +50% honey. Each wave clear pays +1 larva per Forager rank.',
+      },
+    ],
   },
   nurse: {
     name: 'Nurse',
@@ -183,24 +201,63 @@ export const ROLES = {
     description: 'Raises the bee cap and brings new larvae each wave.',
     perRankLarvaePerWave: 1,
     perRankPopCap: 2,
-    costs: [25, 55, 95],
+    costs:       [25, 55, 95],
+    larvaeCosts: [ 0,  0,  6],
     maxRank: 3,
+    specs: [
+      {
+        id: 'royal_diet',
+        name: 'Royal Diet',
+        description: 'Bee cap +50%. Larvae per wave drop to zero — feast or famine.',
+      },
+      {
+        id: 'larval_surge',
+        name: 'Larval Surge',
+        description: '+3 extra larvae per wave clear. Bee cap −1.',
+      },
+    ],
   },
   guard: {
     name: 'Guard',
     glyph: '🛡',
     description: 'Stings any intruder that reaches the hive door.',
     perRankContactDPS: 1.5,
-    costs: [40, 75, 130],
+    costs:       [40, 75, 130],
+    larvaeCosts: [ 0,  0,   8],
     maxRank: 3,
+    specs: [
+      {
+        id: 'sticky_resin',
+        name: 'Sticky Resin',
+        description: 'Intruders at the door slow 60% and drop +3 honey on death. Guard damage −25%.',
+      },
+      {
+        id: 'thorn_mantle',
+        name: 'Thorn Mantle',
+        description: 'A 3 dmg/sec aura covers the hive. The hive door no longer takes contact damage.',
+      },
+    ],
   },
   striker: {
     name: 'Striker',
     glyph: '⚔',
     description: 'Sends larger swarms at your target. Limited by bee cap.',
     perRankSwarmBonus: 2,
-    costs: [30, 65, 110],
+    costs:       [30, 65, 110],
+    larvaeCosts: [ 0,  0,   8],
     maxRank: 3,
+    specs: [
+      {
+        id: 'meteor_volley',
+        name: 'Meteor Volley',
+        description: 'Every 4th volley becomes a single huge particle: 5× damage, splash on impact.',
+      },
+      {
+        id: 'echo_sting',
+        name: 'Echo Sting',
+        description: 'Striker hits have an 18% chance to fire a free echo at the same target.',
+      },
+    ],
   },
   architect: {
     name: 'Architect',
@@ -208,8 +265,21 @@ export const ROLES = {
     description: 'Thickens the comb. More HP, more honey held.',
     perRankHiveHP: 25,
     perRankStorage: 80,
-    costs: [50, 100, 170],
+    costs:       [50, 100, 170],
+    larvaeCosts: [ 0,   0,  10],
     maxRank: 3,
+    specs: [
+      {
+        id: 'honeycomb_vault',
+        name: 'Honeycomb Vault',
+        description: 'Honey gained while at cap turns 5:1 into wax armor. Wax soaks damage before HP.',
+      },
+      {
+        id: 'resonant_comb',
+        name: 'Resonant Comb',
+        description: 'Wave-clear regen ×3. The wave starts with a slow pulse on every intruder. Max HP −20.',
+      },
+    ],
   },
 };
 
@@ -289,68 +359,64 @@ export const MODIFIERS = [
 // Each boon stacks with modifiers and other boons via getEff().
 // ============================================================
 export const BOONS = [
+  // ── Proc / chance-to-fire ──
   {
-    id: 'brutal_stinger',
-    name: 'Brutal Stinger',
-    summary: 'Strikers deal +30% damage',
-    flavor: 'A blooded queen knows where to bury the first sting.',
-    effects: { strikerDmgMul: 1.3 },
+    id: 'echo_buzz',
+    name: 'Echo Buzz',
+    summary: '12% chance for a striker volley to fire a second time',
+    flavor: 'The hive remembers every command.',
+    effects: { volleyEchoChance: 0.12 },
   },
   {
-    id: 'foragers_blessing',
-    name: "Forager's Blessing",
-    summary: 'Foragers produce +60% honey',
-    flavor: 'The pollen sings in golden tongues.',
-    effects: { foragerHoneyMul: 1.6 },
+    id: 'sister_sting',
+    name: 'Sister Sting',
+    summary: 'Striker hits stack a −1 armor mark on the target (max 5)',
+    flavor: 'Every sting reminds the next one where to land.',
+    effects: { sisterStingMaxStacks: 5, sisterStingPerStack: 1 },
   },
+  // ── Conditional / build-defining ──
+  {
+    id: 'honey_geyser',
+    name: 'Honey Geyser',
+    summary: 'Striker damage doubles on every 3rd wave (3, 6, 9)',
+    flavor: 'Save the rage. Spend it on the moments that matter.',
+    effects: { honeyGeyserWaveMod: 3, honeyGeyserDmgMul: 2 },
+  },
+  {
+    id: 'drone_kamikaze',
+    name: 'Drone Kamikaze',
+    summary: 'When the bee cap is full, strikers deal +60% damage',
+    flavor: 'A full hive has no spare bees — every sting must matter.',
+    effects: { droneKamikazeAtCapDmgMul: 1.6 },
+  },
+  {
+    id: 'queens_decree',
+    name: "Queen's Decree",
+    summary: 'The first role you upgrade each wave costs 0 honey. Subsequent ones cost +20%.',
+    flavor: 'The first command of the day is free. The rest must be earned.',
+    effects: { queensDecreeFirstFree: true, queensDecreeRestMul: 1.2 },
+  },
+  {
+    id: 'larval_tithe',
+    name: 'Larval Tithe',
+    summary: 'When you spend larvae on a specialization, refund 25 honey',
+    flavor: 'Wax remembers what was given.',
+    effects: { larvalTitheRefund: 25 },
+  },
+  // ── Old reliables (kept) ──
   {
     id: 'steel_resolve',
     name: 'Steel Resolve',
-    summary: '+50 max hive HP · −1 larva per wave',
-    flavor: 'Hold the line. Lose what you must.',
-    effects: { hiveStartHPBonus: 50, waveLarvaeBonus: -1 },
+    summary: '+40 max hive HP',
+    flavor: 'Hold the line.',
+    effects: { hiveStartHPBonus: 40 },
   },
   {
-    id: 'royal_diet',
-    name: 'Royal Diet',
-    summary: '+3 larvae per wave cleared',
-    flavor: 'The queen feasts. The brood grows.',
-    effects: { waveLarvaeBonus: 3 },
-  },
-  {
-    id: 'architects_cunning',
-    name: "Architect's Cunning",
-    summary: '+45 max hive HP · +120 honey storage',
-    flavor: 'Wax never lies. It only grows.',
-    effects: { hiveStartHPBonus: 45, honeyCapBonus: 120 },
-  },
-  {
-    id: 'swarm_tactics',
-    name: 'Swarm Tactics',
-    summary: 'Strikers fly 25% faster',
-    flavor: 'Moving as one, they cannot be cornered.',
-    effects: { strikerSpeedMul: 1.25 },
-  },
-  {
-    id: 'bee_eaters_tactic',
-    name: "Bee-Eater's Tactic",
-    summary: 'Strikers deal +70% damage to spiders',
-    flavor: 'Know your enemy. Bury its eyes.',
-    effects: { spiderDmgMul: 1.7 },
-  },
-  {
-    id: 'hive_mind',
-    name: 'Hive Mind',
-    summary: 'All role upgrades cost 15% less honey',
-    flavor: 'The colony moves as one mind.',
-    effects: { allRoleCostMul: 0.85 },
-  },
-  {
-    id: 'old_wax',
-    name: 'Old Wax',
-    summary: '+8 honey at the start of every wave',
-    flavor: 'Each clear leaves something behind. Pick it up.',
-    effects: { waveHoneyBonus: 8 },
+    id: 'brood_provisions',
+    name: 'Brood Provisions',
+    summary: '+2 larvae per wave cleared',
+    flavor: 'There will always be enough for the next sting.',
+    effects: { waveLarvaeBonus: 2 },
   },
   {
     id: 'eager_volley',
@@ -358,6 +424,13 @@ export const BOONS = [
     summary: 'Strikers fire volleys 20% faster',
     flavor: 'Less waiting. More stinging.',
     effects: { strikerCooldownMul: 0.8 },
+  },
+  {
+    id: 'foragers_blessing',
+    name: "Forager's Blessing",
+    summary: 'Foragers produce +50% honey',
+    flavor: 'The pollen sings in golden tongues.',
+    effects: { foragerHoneyMul: 1.5 },
   },
 ];
 
