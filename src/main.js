@@ -1,7 +1,7 @@
 // Comb At Me Bro — Phase B1 entry. Wires canvas + loop + HUD + Ready button.
 
-import { createState, resizeState, updateState, startNextWave, restartRun } from './game.js';
-import { render } from './render.js';
+import { createState, resizeState, updateState, startNextWave, restartRun } from './game.js?v=__VERSION__';
+import { render } from './render.js?v=__VERSION__';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');

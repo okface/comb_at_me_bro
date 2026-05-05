@@ -1,7 +1,7 @@
 // Phase B1 game logic — multi-wave runner with idle/active phases.
 // Single-file for now; will split into game/ submodules in Phase B2+.
 
-import { HIVE, HORNET, STRIKER, generateWave, TOTAL_WAVES } from './data.js';
+import { HIVE, HORNET, STRIKER, generateWave, TOTAL_WAVES } from './data.js?v=__VERSION__';
 
 export function createState(width, height) {
   const hive = {

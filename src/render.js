@@ -1,7 +1,7 @@
 // Phase A renderer — placeholder shapes in the locked palette.
 // All wobble/animation here is procedural; baked PNG sprites land in Phase E.
 
-import { PALETTE, HIVE, STRIKER } from './data.js';
+import { PALETTE, HIVE, STRIKER } from './data.js?v=__VERSION__';
 
 export function render(ctx, state) {
   const { width, height, hive } = state;
