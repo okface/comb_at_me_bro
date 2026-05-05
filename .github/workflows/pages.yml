@@ -22,14 +22,21 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      - name: Inject deploy version (cache-bust)
+      - name: Stage Pages site (excludes handoff/, plans/, etc.)
         run: |
+          mkdir -p _site
+          cp index.html style.css _site/
+          cp -r src _site/
           sha=${GITHUB_SHA::8}
           echo "Replacing __VERSION__ with $sha"
-          sed -i "s/__VERSION__/$sha/g" index.html src/main.js src/game.js src/render.js
+          sed -i "s/__VERSION__/$sha/g" \
+            _site/index.html \
+            _site/src/main.js \
+            _site/src/game.js \
+            _site/src/render.js
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: _site
       - id: deployment
         uses: actions/deploy-pages@v4

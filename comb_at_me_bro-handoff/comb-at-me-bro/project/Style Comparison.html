@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Comb At Me Bro — Style Comparison</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Fraunces:opsz,wght@9..144,400;9..144,600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #f1ece1;
+    --paper-2: #e6e0d1;
+    --ink: #1f1a14;
+    --ink-soft: #5a4f3e;
+    --rule: #c8c0ad;
+    --hot: oklch(62% 0.14 60);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--paper); color: var(--ink); font-family: 'JetBrains Mono', monospace; }
+  body { padding: 56px 56px 96px; }
+
+  header { max-width: 1320px; margin: 0 auto 40px; }
+  .eyebrow { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-soft); margin: 0 0 12px; }
+  h1 { font-family: 'Fraunces', serif; font-weight: 600; font-size: 44px; line-height: 1.05; margin: 0 0 16px; letter-spacing: -0.01em; }
+  .lede { font-size: 13px; line-height: 1.6; color: var(--ink-soft); max-width: 720px; margin: 0; }
+  .lede b { color: var(--ink); font-weight: 700; }
+
+  .meta-bar { max-width: 1320px; margin: 0 auto 32px; display: flex; gap: 24px; padding: 14px 18px; border: 1px solid var(--rule); background: var(--paper-2); font-size: 11px; letter-spacing: 0.06em; }
+  .meta-bar span { display: flex; gap: 8px; align-items: center; }
+  .meta-bar span::before { content: ''; width: 6px; height: 6px; background: var(--ink); border-radius: 50%; }
+
+  /* Comparison grid */
+  .grid {
+    max-width: 1320px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 140px repeat(3, 1fr);
+    gap: 0;
+    border-top: 1px solid var(--ink);
+    border-left: 1px solid var(--ink);
+  }
+  .grid > * {
+    border-right: 1px solid var(--ink);
+    border-bottom: 1px solid var(--ink);
+    padding: 18px;
+    background: var(--paper);
+  }
+  .col-head {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 18px 18px 16px;
+  }
+  .col-head .name { font-size: 14px; font-weight: 700; letter-spacing: 0.02em; margin: 0 0 6px; }
+  .col-head .desc { font-size: 10.5px; line-height: 1.5; opacity: 0.75; margin: 0; }
+  .row-head {
+    display: flex; flex-direction: column; justify-content: center;
+    background: var(--paper-2);
+    padding: 18px 14px;
+  }
+  .row-head .num { font-size: 11px; color: var(--ink-soft); margin-bottom: 6px; }
+  .row-head .label { font-family: 'Fraunces', serif; font-size: 17px; font-weight: 600; line-height: 1.1; letter-spacing: -0.01em; }
+  .row-head .sub { font-size: 10px; color: var(--ink-soft); margin-top: 6px; line-height: 1.4; }
+
+  .cell { aspect-ratio: 1 / 1; padding: 0; position: relative; overflow: hidden; }
+  .cell-tag {
+    position: absolute; top: 8px; left: 8px;
+    font-size: 9.5px; letter-spacing: 0.1em;
+    background: rgba(255,255,255,0.85); color: var(--ink);
+    padding: 3px 6px; border-radius: 2px;
+    z-index: 2;
+  }
+  .corner {
+    grid-column: 1; grid-row: 1;
+    background: var(--paper);
+    display: flex; flex-direction: column; justify-content: flex-end;
+    padding: 14px;
+  }
+  .corner .k { font-size: 9.5px; letter-spacing: 0.1em; color: var(--ink-soft); }
+
+  /* Native scale strip */
+  .native-section { max-width: 1320px; margin: 64px auto 0; }
+  .native-section h2 { font-family: 'Fraunces', serif; font-weight: 600; font-size: 24px; margin: 0 0 6px; letter-spacing: -0.01em; }
+  .native-section p { font-size: 11.5px; color: var(--ink-soft); margin: 0 0 24px; line-height: 1.6; max-width: 640px; }
+  .native-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
+    border-top: 1px solid var(--ink);
+    padding-top: 24px;
+  }
+  .native-card { background: var(--paper-2); border: 1px solid var(--rule); padding: 18px; }
+  .native-card .label { font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); margin: 0 0 14px; }
+  .native-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-top: 1px dashed var(--rule); }
+  .native-row:first-of-type { border-top: none; }
+  .native-row .px {
+    flex: 0 0 auto;
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    padding: 4px;
+  }
+  .native-row .meta { font-size: 10px; color: var(--ink-soft); line-height: 1.5; }
+  .native-row .meta b { color: var(--ink); font-weight: 700; display: block; font-size: 11px; }
+
+  /* Notes column */
+  .notes-section { max-width: 1320px; margin: 64px auto 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  .note-card { border: 1px solid var(--ink); padding: 22px; background: var(--paper-2); }
+  .note-card h3 { font-family: 'Fraunces', serif; font-weight: 600; font-size: 18px; margin: 0 0 12px; }
+  .note-card .pill { display: inline-block; font-size: 9.5px; letter-spacing: 0.1em; background: var(--ink); color: var(--paper); padding: 3px 7px; margin-bottom: 12px; }
+  .note-card dl { margin: 0; font-size: 11px; line-height: 1.55; }
+  .note-card dt { color: var(--ink-soft); margin-top: 10px; }
+  .note-card dt:first-of-type { margin-top: 0; }
+  .note-card dd { margin: 2px 0 0; color: var(--ink); }
+  .note-card .palette { display: flex; gap: 4px; margin-top: 8px; }
+  .note-card .palette span { width: 18px; height: 18px; border: 1px solid var(--ink); }
+
+  footer { max-width: 1320px; margin: 64px auto 0; font-size: 10.5px; color: var(--ink-soft); border-top: 1px solid var(--rule); padding-top: 18px; }
+</style>
+</head>
+<body>
+
+<header>
+  <p class="eyebrow">Style Exploration · v1</p>
+  <h1>Comb At Me Bro<br>Visual style comparison</h1>
+  <p class="lede">Three directions, five subjects each, drawn at the size they'll appear in-game. Read clarity at native scale matters more than detail at zoom — scroll to the <b>native scale strip</b> to compare silhouettes at ~64px (where they'll actually live on a 6" phone).</p>
+</header>
+
+<div class="meta-bar">
+  <span>SUBJECTS · 5</span>
+  <span>STYLES · 3</span>
+  <span>BACKDROP · GRASS TILE</span>
+  <span>VIEWPORT · PORTRAIT</span>
+  <span>STATIC FRAMES</span>
+</div>
+
+<div class="grid">
+  <div class="corner">
+    <div class="k">SUBJECT ↓ / STYLE →</div>
+  </div>
+  <div class="col-head">
+    <p class="name">A · Flat Vector</p>
+    <p class="desc">Geometric primitives, 4–6 colors, no texture. Hyper-casual mobile read.</p>
+  </div>
+  <div class="col-head">
+    <p class="name">B · Hand-Drawn</p>
+    <p class="desc">Wobbly ink, warm paper palette, picture-book cozy.</p>
+  </div>
+  <div class="col-head">
+    <p class="name">C · Pixel Art</p>
+    <p class="desc">32×32 sprites, limited palette, classic chunky pixels.</p>
+  </div>
+
+  <!-- ROW 1: HIVE -->
+  <div class="row-head">
+    <div class="num">01</div>
+    <div class="label">The Hive</div>
+    <div class="sub">player base · grass clearing</div>
+  </div>
+  <div class="cell"><span class="cell-tag">BOX HIVE</span><div id="flat-hive"></div></div>
+  <div class="cell"><span class="cell-tag">WILD NEST</span><div id="hd-hive"></div></div>
+  <div class="cell"><span class="cell-tag">HANGING COMB</span><div id="px-hive"></div></div>
+
+  <!-- ROW 2: SWARM -->
+  <div class="row-head">
+    <div class="num">02</div>
+    <div class="label">Bee Swarm</div>
+    <div class="sub">cluster · in motion</div>
+  </div>
+  <div class="cell"><div id="flat-swarm"></div></div>
+  <div class="cell"><div id="hd-swarm"></div></div>
+  <div class="cell"><div id="px-swarm"></div></div>
+
+  <!-- ROW 3: WORKER -->
+  <div class="row-head">
+    <div class="num">03</div>
+    <div class="label">Worker Bee</div>
+    <div class="sub">UI / icon · single</div>
+  </div>
+  <div class="cell"><div id="flat-worker"></div></div>
+  <div class="cell"><div id="hd-worker"></div></div>
+  <div class="cell"><div id="px-worker"></div></div>
+
+  <!-- ROW 4: HORNET -->
+  <div class="row-head">
+    <div class="num">04</div>
+    <div class="label">Hornet</div>
+    <div class="sub">attacker · menacing</div>
+  </div>
+  <div class="cell"><div id="flat-hornet"></div></div>
+  <div class="cell"><div id="hd-hornet"></div></div>
+  <div class="cell"><div id="px-hornet"></div></div>
+
+  <!-- ROW 5: BEEKEEPER -->
+  <div class="row-head">
+    <div class="num">05</div>
+    <div class="label">Beekeeper</div>
+    <div class="sub">boss · oversized</div>
+  </div>
+  <div class="cell"><div id="flat-keeper"></div></div>
+  <div class="cell"><div id="hd-keeper"></div></div>
+  <div class="cell"><div id="px-keeper"></div></div>
+</div>
+
+<section class="native-section">
+  <h2>At native scale</h2>
+  <p>How each subject reads at the size it'll actually appear on a 6" phone in-game. Tower ~96px, units ~32–48px, swarm ~64px, boss ~128px. The grass tile at 1× is the source of truth for silhouette legibility.</p>
+
+  <div class="native-grid">
+    <div class="native-card">
+      <p class="label">A · Flat Vector @ 1×</p>
+      <div class="native-row"><div class="px" id="flat-n-hive"></div><div class="meta"><b>Hive · 96px</b>tower footprint</div></div>
+      <div class="native-row"><div class="px" id="flat-n-swarm"></div><div class="meta"><b>Swarm · 64px</b>moving cluster</div></div>
+      <div class="native-row"><div class="px" id="flat-n-worker"></div><div class="meta"><b>Worker · 32px</b>UI icon</div></div>
+      <div class="native-row"><div class="px" id="flat-n-hornet"></div><div class="meta"><b>Hornet · 48px</b>enemy</div></div>
+      <div class="native-row"><div class="px" id="flat-n-keeper"></div><div class="meta"><b>Beekeeper · 128px</b>boss</div></div>
+    </div>
+    <div class="native-card">
+      <p class="label">B · Hand-Drawn @ 1×</p>
+      <div class="native-row"><div class="px" id="hd-n-hive"></div><div class="meta"><b>Hive · 96px</b>tower footprint</div></div>
+      <div class="native-row"><div class="px" id="hd-n-swarm"></div><div class="meta"><b>Swarm · 64px</b>moving cluster</div></div>
+      <div class="native-row"><div class="px" id="hd-n-worker"></div><div class="meta"><b>Worker · 32px</b>UI icon</div></div>
+      <div class="native-row"><div class="px" id="hd-n-hornet"></div><div class="meta"><b>Hornet · 48px</b>enemy</div></div>
+      <div class="native-row"><div class="px" id="hd-n-keeper"></div><div class="meta"><b>Beekeeper · 128px</b>boss</div></div>
+    </div>
+    <div class="native-card">
+      <p class="label">C · Pixel Art @ 1×</p>
+      <div class="native-row"><div class="px" id="px-n-hive"></div><div class="meta"><b>Hive · 96px</b>tower footprint</div></div>
+      <div class="native-row"><div class="px" id="px-n-swarm"></div><div class="meta"><b>Swarm · 64px</b>moving cluster</div></div>
+      <div class="native-row"><div class="px" id="px-n-worker"></div><div class="meta"><b>Worker · 32px</b>UI icon</div></div>
+      <div class="native-row"><div class="px" id="px-n-hornet"></div><div class="meta"><b>Hornet · 48px</b>enemy</div></div>
+      <div class="native-row"><div class="px" id="px-n-keeper"></div><div class="meta"><b>Beekeeper · 128px</b>boss</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="notes-section">
+  <div class="note-card">
+    <span class="pill">A · FLAT VECTOR</span>
+    <h3>Best for: scale &amp; speed</h3>
+    <dl>
+      <dt>Hive choice</dt><dd>Man-made box — silhouette reads as "tower."</dd>
+      <dt>Strengths</dt><dd>Scales infinitely, fastest to author, strongest 32px read.</dd>
+      <dt>Risks</dt><dd>Can feel generic — needs strong color &amp; motion to feel alive.</dd>
+    </dl>
+    <div class="palette">
+      <span style="background:#7FB069"></span>
+      <span style="background:#FFD23F"></span>
+      <span style="background:#F4A93B"></span>
+      <span style="background:#A8401C"></span>
+      <span style="background:#1A1A1A"></span>
+    </div>
+  </div>
+  <div class="note-card">
+    <span class="pill">B · HAND-DRAWN</span>
+    <h3>Best for: warmth &amp; charm</h3>
+    <dl>
+      <dt>Hive choice</dt><dd>Wild nest — leans into storybook tone.</dd>
+      <dt>Strengths</dt><dd>Distinctive, marketable, premium feel. Stand-out in store.</dd>
+      <dt>Risks</dt><dd>Heaviest art lift; ink wobble can muddy the smallest silhouettes.</dd>
+    </dl>
+    <div class="palette">
+      <span style="background:#C8D89A"></span>
+      <span style="background:#F2C24A"></span>
+      <span style="background:#E8A24A"></span>
+      <span style="background:#8A3A1C"></span>
+      <span style="background:#3A2818"></span>
+    </div>
+  </div>
+  <div class="note-card">
+    <span class="pill">C · PIXEL ART</span>
+    <h3>Best for: nostalgia &amp; clarity</h3>
+    <dl>
+      <dt>Hive choice</dt><dd>Hanging comb — classic game language.</dd>
+      <dt>Strengths</dt><dd>Crispest small-scale silhouettes; great for animation later.</dd>
+      <dt>Risks</dt><dd>Needs disciplined palette &amp; HUD type to avoid retro pastiche.</dd>
+    </dl>
+    <div class="palette">
+      <span style="background:#5b8c3f"></span>
+      <span style="background:#f6c83c"></span>
+      <span style="background:#e8a13a"></span>
+      <span style="background:#a83a18"></span>
+      <span style="background:#1b1410"></span>
+    </div>
+  </div>
+</section>
+
+<footer>
+  comb_at_me_bro · style v1 · subjects rendered at parity for evaluation only · final assets to be authored in chosen direction
+</footer>
+
+<!-- React + Babel -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="styles/flat.jsx"></script>
+<script type="text/babel" src="styles/handdrawn.jsx"></script>
+<script type="text/babel" src="styles/pixel.jsx"></script>
+
+<script type="text/babel">
+  const { FlatHive, FlatSwarm, FlatWorker, FlatHornet, FlatBeekeeper } = window.FLAT_STYLE;
+  const { HDHive, HDSwarm, HDWorker, HDHornet, HDBeekeeper } = window.HD_STYLE;
+  const { PxHive, PxSwarm, PxWorker, PxHornet, PxBeekeeper } = window.PX_STYLE;
+
+  const mounts = [
+    ['flat-hive', <FlatHive />], ['hd-hive', <HDHive id="hd-hive" />], ['px-hive', <PxHive />],
+    ['flat-swarm', <FlatSwarm />], ['hd-swarm', <HDSwarm id="hd-swarm" />], ['px-swarm', <PxSwarm />],
+    ['flat-worker', <FlatWorker />], ['hd-worker', <HDWorker id="hd-worker" />], ['px-worker', <PxWorker />],
+    ['flat-hornet', <FlatHornet />], ['hd-hornet', <HDHornet id="hd-hornet" />], ['px-hornet', <PxHornet />],
+    ['flat-keeper', <FlatBeekeeper />], ['hd-keeper', <HDBeekeeper id="hd-keeper" />], ['px-keeper', <PxBeekeeper />],
+  ];
+  mounts.forEach(([id, el]) => {
+    const node = document.getElementById(id);
+    if (node) ReactDOM.createRoot(node).render(el);
+  });
+
+  // Native scale row — render same components into smaller boxes
+  const NATIVE = [
+    { row: 'hive', size: 96, comps: [<FlatHive />, <HDHive id="hd-n-hive" />, <PxHive />] },
+    { row: 'swarm', size: 64, comps: [<FlatSwarm />, <HDSwarm id="hd-n-swarm" />, <PxSwarm />] },
+    { row: 'worker', size: 32, comps: [<FlatWorker />, <HDWorker id="hd-n-worker" />, <PxWorker />] },
+    { row: 'hornet', size: 48, comps: [<FlatHornet />, <HDHornet id="hd-n-hornet" />, <PxHornet />] },
+    { row: 'keeper', size: 128, comps: [<FlatBeekeeper />, <HDBeekeeper id="hd-n-keeper" />, <PxBeekeeper />] },
+  ];
+  const cols = ['flat', 'hd', 'px'];
+  NATIVE.forEach(({ row, size, comps }) => {
+    cols.forEach((col, i) => {
+      const node = document.getElementById(`${col}-n-${row}`);
+      if (!node) return;
+      node.style.width = size + 'px';
+      node.style.height = size + 'px';
+      ReactDOM.createRoot(node).render(comps[i]);
+    });
+  });
+</script>
+
+</body>
+</html>

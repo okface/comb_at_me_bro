@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>Comb At Me Bro — Bee Roles</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root { --paper:#F5EBD6; --paper2:#E8DCBF; --ink:#3A2818; --inkSoft:#6B5A45; --rule:#C8C0AD; --sage:#C8D89A;}
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--paper); color:var(--ink); font-family:'JetBrains Mono', monospace; padding:48px 56px 96px;}
+  header{max-width:1200px; margin:0 auto 28px;}
+  .eyebrow{font-size:11px; letter-spacing:0.18em; color:var(--inkSoft); text-transform:uppercase; margin:0 0 10px;}
+  h1{font-family:'Fraunces',serif; font-weight:700; font-size:38px; margin:0 0 12px; letter-spacing:-0.01em;}
+  .lede{font-size:12px; color:var(--inkSoft); margin:0; max-width:680px; line-height:1.6;}
+
+  .meta-bar{max-width:1200px; margin:0 auto 32px; display:flex; gap:24px; padding:14px 18px; border:1px solid var(--rule); background:var(--paper2); font-size:11px; letter-spacing:0.06em;}
+  .meta-bar span{display:flex; gap:8px; align-items:center;}
+  .meta-bar span::before{content:''; width:6px; height:6px; background:var(--ink); border-radius:50%;}
+
+  .section-title{max-width:1200px; margin:48px auto 16px; font-family:'Fraunces',serif; font-size:22px; font-weight:600;}
+
+  /* Roles grid */
+  .roles{max-width:1200px; margin:0 auto; display:grid; grid-template-columns:repeat(2, 1fr); gap:20px;}
+  .role{border:1px solid var(--ink); background:var(--paper); padding:18px; display:grid; grid-template-columns: 120px 1fr; gap:18px;}
+  .role .portrait{width:120px; height:120px; background:var(--sage); border:1px solid var(--ink); display:flex; align-items:center; justify-content:center;}
+  .role h3{font-family:'Fraunces',serif; font-size:18px; margin:0 0 4px; font-weight:600;}
+  .role .cue{display:inline-block; font-size:9.5px; padding:2px 6px; background:var(--ink); color:var(--paper); letter-spacing:0.08em; margin-bottom:6px;}
+  .role p{font-size:11px; line-height:1.55; color:var(--inkSoft); margin:0 0 12px;}
+  .scales{display:flex; gap:14px; align-items:flex-end; padding-top:8px; border-top:1px dashed var(--rule);}
+  .scale{display:flex; flex-direction:column; align-items:center; gap:4px;}
+  .scale .swatch{display:flex; align-items:center; justify-content:center; background:var(--paper2); border:1px solid var(--rule);}
+  .scale .lbl{font-size:9px; letter-spacing:0.1em; color:var(--inkSoft);}
+
+  /* Queen showcase */
+  .queen-row{max-width:1200px; margin:0 auto; display:grid; grid-template-columns: repeat(3, 1fr); gap:20px;}
+  .queen-card{border:1px solid var(--ink); background:var(--paper); padding:18px;}
+  .queen-card .portrait{height:180px; background:var(--sage); border:1px solid var(--ink); display:flex; align-items:center; justify-content:center; margin-bottom:12px;}
+  .queen-card h3{font-family:'Fraunces',serif; font-size:18px; margin:0 0 4px;}
+  .queen-card .pill{display:inline-block; font-size:9.5px; padding:2px 6px; letter-spacing:0.08em;}
+  .queen-card.calm .pill{background:#7E9658; color:var(--paper);}
+  .queen-card.focused .pill{background:#E8A24A; color:var(--ink);}
+  .queen-card.panicked .pill{background:#A8351E; color:var(--paper);}
+  .queen-card p{font-size:11px; line-height:1.55; color:var(--inkSoft); margin:6px 0 0;}
+
+  footer{max-width:1200px; margin:48px auto 0; font-size:10.5px; color:var(--inkSoft); border-top:1px solid var(--rule); padding-top:18px;}
+</style>
+</head>
+<body>
+
+<header>
+  <p class="eyebrow">Subject 02 · Bees · Player Units</p>
+  <h1>Bee roles</h1>
+  <p class="lede">Seven worker roles + the Queen. Each shown at three scales — 32px (HUD icon), 48px (gameplay native), 96px (shop card portrait). Distinguishability at 32px is critical; one accent cue per role is called out below the name.</p>
+</header>
+
+<div class="meta-bar">
+  <span>ROLES · 7</span>
+  <span>QUEEN STATES · 3</span>
+  <span>WING FLUTTER · LIVE</span>
+  <span>WALK CYCLE · 2-FRAME BOB</span>
+</div>
+
+<div class="roles" id="roles"></div>
+
+<h2 class="section-title">Queen — three expression states</h2>
+<div class="queen-row" id="queens"></div>
+
+<footer>cb_at_me_bro · roles v1 · all wings flutter live; sprite metrics: 32 / 48 / 96 px</footer>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="cb/style.jsx"></script>
+<script type="text/babel" src="cb/anim.jsx"></script>
+<script type="text/babel" src="cb/bees.jsx"></script>
+
+<script type="text/babel">
+const { PAL, InkDefs } = window.CAMB;
+const { AnimStyles } = window.CAMB_ANIM;
+const { BEE_ROLES, QueenBee } = window.CAMB_BEES;
+
+function ScaleSprite({ Bee, size }) {
+  return (
+    <div className="swatch" style={{width:size+12, height:size+12, padding:6}}>
+      <svg viewBox="0 0 64 64" width={size} height={size} style={{display:'block', overflow:'visible'}}>
+        <Bee/>
+      </svg>
+    </div>
+  );
+}
+
+function Scaffold() {
+  return (
+    <>
+      <InkDefs/>
+      <AnimStyles/>
+    </>
+  );
+}
+
+function Roles() {
+  return (
+    <>
+      {BEE_ROLES.map(r=>(
+        <div className="role" key={r.id}>
+          <div className="portrait">
+            <svg viewBox="0 0 64 64" width="100" height="100" style={{display:'block', overflow:'visible'}} className="cb-bob">
+              <r.Bee/>
+            </svg>
+          </div>
+          <div>
+            <span className="cue">▸ {r.cue.toUpperCase()}</span>
+            <h3>{r.name}</h3>
+            <p>{r.desc}</p>
+            <div className="scales">
+              <div className="scale">
+                <ScaleSprite Bee={r.Bee} size={32}/>
+                <span className="lbl">32 · ICON</span>
+              </div>
+              <div className="scale">
+                <ScaleSprite Bee={r.Bee} size={48}/>
+                <span className="lbl">48 · GAME</span>
+              </div>
+              <div className="scale">
+                <ScaleSprite Bee={r.Bee} size={96}/>
+                <span className="lbl">96 · CARD</span>
+              </div>
+              <div className="scale">
+                <div className="swatch cb-bob" style={{width:60, height:60, padding:6}}>
+                  <svg viewBox="0 0 64 64" width="48" height="48" style={{display:'block', overflow:'visible'}}>
+                    <r.Bee/>
+                  </svg>
+                </div>
+                <span className="lbl">WALK</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </>
+  );
+}
+
+const QUEENS = [
+  { state:'calm', label:'Calm', desc:'HP 100–60% · idle pulse, eyes soft.'},
+  { state:'focused', label:'Focused', desc:'HP 60–25% · brow flat, mouth set.'},
+  { state:'panicked', label:'Panicked', desc:'HP <25% · wide eyes, exclamation.'},
+];
+
+function Queens() {
+  return (
+    <>
+      {QUEENS.map(q=>(
+        <div key={q.state} className={`queen-card ${q.state}`}>
+          <div className="portrait">
+            <div className="cb-breathe">
+              <QueenBee expression={q.state} size={150}/>
+            </div>
+          </div>
+          <h3>Queen — {q.label}</h3>
+          <span className="pill">{q.state.toUpperCase()}</span>
+          <p>{q.desc}</p>
+        </div>
+      ))}
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('roles')).render(<><Scaffold/><Roles/></>);
+ReactDOM.createRoot(document.getElementById('queens')).render(<Queens/>);
+</script>
+</body>
+</html>

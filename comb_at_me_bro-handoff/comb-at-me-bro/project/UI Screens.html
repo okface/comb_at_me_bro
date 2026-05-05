@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>Comb At Me Bro — UI Screens</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root { --paper:#F5EBD6; --paper2:#E8DCBF; --ink:#3A2818; --inkSoft:#6B5A45; --rule:#C8C0AD;}
+  *{box-sizing:border-box;}
+  body{margin:0; background:#E2DCC9; color:var(--ink); font-family:'JetBrains Mono', monospace; padding:48px 32px 96px;}
+  header{max-width:1320px; margin:0 auto 28px;}
+  .eyebrow{font-size:11px; letter-spacing:0.18em; color:var(--inkSoft); text-transform:uppercase; margin:0 0 10px;}
+  h1{font-family:'Fraunces',serif; font-weight:700; font-size:38px; margin:0 0 12px;}
+  .lede{font-size:12px; color:var(--inkSoft); margin:0; max-width:680px; line-height:1.6;}
+  .grid{max-width:1320px; margin:0 auto; display:flex; flex-wrap:wrap; gap:32px; justify-content:center;}
+  footer{max-width:1320px; margin:48px auto 0; font-size:10.5px; color:var(--inkSoft); border-top:1px solid var(--rule); padding-top:18px;}
+</style>
+</head>
+<body>
+
+<header>
+  <p class="eyebrow">Subject 06 · UI Screens · Picture-Book Frames</p>
+  <h1>UI screens</h1>
+  <p class="lede">11 portrait phone frames. Hand-lettered title, paper-card modals, ink-corner accents. All at native 390×844; queens breathe, hives pulse, banner sweeps still loop where present.</p>
+</header>
+
+<div class="grid" id="grid"></div>
+
+<footer>cb_at_me_bro · ui v1 · 11 screens · all live SVG · same v1 palette</footer>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="cb/style.jsx"></script>
+<script type="text/babel" src="cb/anim.jsx"></script>
+<script type="text/babel" src="cb/bees.jsx"></script>
+<script type="text/babel" src="cb/structures.jsx"></script>
+<script type="text/babel" src="cb/hive.jsx"></script>
+<script type="text/babel" src="cb/ui.jsx"></script>
+
+<script type="text/babel">
+const { InkDefs } = window.CAMB;
+const { AnimStyles } = window.CAMB_ANIM;
+const { UI_SCREENS } = window.CAMB_UI;
+function App(){
+  return (
+    <>
+      <InkDefs/>
+      <AnimStyles/>
+      {UI_SCREENS.map(s=> <s.Comp key={s.id}/>)}
+    </>
+  );
+}
+ReactDOM.createRoot(document.getElementById('grid')).render(<App/>);
+</script>
+</body>
+</html>

@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>Comb At Me Bro — Gameplay Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root { --paper:#F5EBD6; --ink:#3A2818; --inkSoft:#6B5A45; --rule:#C8C0AD; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:#E2DCC9; font-family:'JetBrains Mono', monospace; color:var(--ink); padding:48px; }
+  header { max-width:1080px; margin:0 auto 28px; }
+  h1 { font-family:'Fraunces',serif; font-weight:700; font-size:36px; margin:0 0 6px; letter-spacing:-0.01em; }
+  .lede { font-size:12px; color:var(--inkSoft); margin:0; }
+  .row { max-width:1080px; margin:0 auto; display:grid; grid-template-columns: 1fr 1fr; gap:32px; }
+  .frame { background:var(--paper); border:1px solid var(--ink); padding:18px; }
+  .frame h2 { font-family:'Fraunces',serif; font-size:18px; margin:0 0 4px; }
+  .frame .sub { font-size:10.5px; color:var(--inkSoft); margin:0 0 14px; letter-spacing:0.06em; }
+  .phone { width:390px; height:844px; background:var(--paper); position:relative; overflow:hidden; border:1px solid var(--ink); margin:0 auto; transform-origin: top center; }
+  @media (max-width: 1100px) { .phone { transform: scale(0.85); } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Gameplay screen — both states</h1>
+  <p class="lede">6" phone portrait · 390×844 · top-down · wild-nest hive bottom-center</p>
+</header>
+
+<div class="row">
+  <div class="frame">
+    <h2>(a) Wave in progress</h2>
+    <p class="sub">WAVE 12 / 30 · speed/pause visible · live combat</p>
+    <div id="screen-a" class="phone"></div>
+  </div>
+  <div class="frame">
+    <h2>(b) Between waves</h2>
+    <p class="sub">calm · idle bees · full action bar</p>
+    <div id="screen-b" class="phone"></div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="cb/style.jsx"></script>
+<script type="text/babel" src="cb/anim.jsx"></script>
+<script type="text/babel" src="cb/bees.jsx"></script>
+<script type="text/babel" src="cb/enemies.jsx"></script>
+<script type="text/babel" src="cb/structures.jsx"></script>
+<script type="text/babel" src="cb/hive.jsx"></script>
+
+<script type="text/babel">
+  const { PAL, InkDefs } = window.CAMB;
+  const { AnimStyles } = window.CAMB_ANIM;
+  const { QueenBee, ForagerBee, GuardBee, StrikerBee } = window.CAMB_BEES;
+  const { Hornet, Spider } = window.CAMB_ENEMIES;
+  const { WildNestHive } = window.CAMB_HIVE;
+
+  // ---- HUD shared ----
+  const TopBar = ({ wave='12 / 30', hp=0.7 }) => (
+    <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 14px', borderBottom:`1px solid ${PAL.paperShade}`}}>
+      <div style={{fontFamily:'Fraunces',fontWeight:700,fontSize:14,letterSpacing:'0.04em'}}>WAVE {wave}</div>
+      <div style={{display:'flex', gap:3, alignItems:'center'}}>
+        {Array.from({length:8}).map((_,i)=>{
+          const filled = (i+1) <= Math.round(hp*8);
+          return (
+            <svg key={i} viewBox="0 0 12 12" width="11" height="11">
+              <polygon points="6,1 11,3.5 11,8.5 6,11 1,8.5 1,3.5" fill={filled?PAL.honey:PAL.paperShade} stroke={PAL.ink} strokeWidth="0.8"/>
+            </svg>
+          );
+        })}
+      </div>
+      <div style={{width:24,height:24,border:`1.4px solid ${PAL.ink}`,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center'}}>
+        <div style={{display:'flex',gap:2}}>
+          <div style={{width:3,height:8,background:PAL.ink}}/>
+          <div style={{width:3,height:8,background:PAL.ink}}/>
+        </div>
+      </div>
+    </div>
+  );
+
+  const CurrencyStrip = () => (
+    <div style={{display:'flex', gap:14, padding:'8px 14px', fontSize:12, fontWeight:500, borderBottom:`1px dashed ${PAL.paperShade}`}}>
+      <span>🐝 14</span>
+      <span style={{color:PAL.honeyDark, fontWeight:700}}>🍯 248</span>
+      <span style={{opacity:0.4}}>✨ —</span>
+    </div>
+  );
+
+  const QueenPortrait = ({ expr='calm' }) => (
+    <div style={{position:'absolute', left:10, bottom:90, width:60, height:60, border:`1.4px solid ${PAL.ink}`, borderRadius:'50%', overflow:'hidden', background:PAL.paper, display:'flex',alignItems:'center',justifyContent:'center'}}>
+      <div className="cb-breathe" style={{transformOrigin:'center'}}>
+        <QueenBee expression={expr} size={64}/>
+      </div>
+    </div>
+  );
+
+  // ---- Screen A — wave in progress ----
+  function ScreenA() {
+    const [honey, setHoney] = React.useState(248);
+    React.useEffect(()=>{
+      const t = setInterval(()=>setHoney(h=>h+1), 700);
+      return ()=>clearInterval(t);
+    },[]);
+    return (
+      <div style={{width:'100%', height:'100%', position:'relative', background:PAL.paper, display:'flex', flexDirection:'column'}}>
+        <TopBar wave="12 / 30" hp={0.55}/>
+        <CurrencyStrip/>
+        {/* Field */}
+        <div style={{flex:1, position:'relative', background:`url(#grass-tile)`, backgroundColor:PAL.sage}}>
+          <svg width="100%" height="100%" viewBox="0 0 390 600" preserveAspectRatio="xMidYMid slice" style={{position:'absolute', inset:0}}>
+            <rect width="390" height="600" fill="url(#grass-tile)"/>
+            {/* incoming warning ribbon */}
+            <rect x="0" y="0" width="390" height="40" fill={PAL.redInk} opacity="0.18" className="cb-pulse" style={{animation:'cb-warn-wash 1.6s ease-in-out infinite'}}/>
+          </svg>
+          {/* Hornet diving */}
+          <div style={{position:'absolute', top:80, left:120}}>
+            <svg viewBox="0 0 64 64" width="56" height="56" style={{overflow:'visible'}} className="cb-bob">
+              <Hornet/>
+            </svg>
+            {/* dotted descent */}
+            <svg style={{position:'absolute', top:50, left:20, pointerEvents:'none'}} width="40" height="120">
+              <path d="M 20,0 Q 30,40 16,100" stroke={PAL.redInk} strokeWidth="1.4" strokeDasharray="2 4" fill="none" opacity="0.5"/>
+            </svg>
+          </div>
+          {/* Spider crawling */}
+          <div style={{position:'absolute', top:200, right:50}}>
+            <svg viewBox="0 0 64 64" width="60" height="60" style={{overflow:'visible'}}>
+              <Spider/>
+            </svg>
+          </div>
+          {/* Swarm intercept */}
+          <div style={{position:'absolute', top:160, left:170}}>
+            {[[0,0],[10,8],[-8,12],[14,-6],[-12,-2],[6,18],[20,4],[-4,22]].map(([x,y],i)=>(
+              <div key={i} style={{position:'absolute', left:x, top:y}} className="cb-flutter-s">
+                <svg width="10" height="10" viewBox="0 0 10 10">
+                  <ellipse cx="5" cy="5" rx="4" ry="2.5" fill={PAL.honey} stroke={PAL.ink} strokeWidth="0.6"/>
+                  <line x1="3" y1="5" x2="7" y2="5" stroke={PAL.ink} strokeWidth="0.6"/>
+                </svg>
+              </div>
+            ))}
+          </div>
+          {/* damage indicator */}
+          <div style={{position:'absolute', top:120, left:140, animation:'cb-puff 1.4s ease-out infinite'}}>
+            <svg width="40" height="40" viewBox="0 0 40 40">
+              <g fill={PAL.redInk} opacity="0.7">
+                <circle cx="20" cy="20" r="3"/>
+                <circle cx="10" cy="14" r="1.5"/>
+                <circle cx="28" cy="12" r="1.6"/>
+                <circle cx="14" cy="28" r="1.4"/>
+                <circle cx="30" cy="26" r="1.2"/>
+              </g>
+            </svg>
+          </div>
+          {/* Honey gain floater */}
+          <div style={{position:'absolute', bottom:120, left:180, fontFamily:'Fraunces', fontWeight:700, fontSize:14, color:PAL.honeyDark, animation:'cb-rise 1.8s ease-out infinite'}}>+5🍯</div>
+          {/* Hive at bottom */}
+          <div style={{position:'absolute', bottom:0, left:'50%', transform:'translateX(-50%)'}}>
+            <WildNestHive size={200} hp={0.55}/>
+          </div>
+        </div>
+        <QueenPortrait expr="focused"/>
+        {/* Wave-mode bottom bar: speed + pause */}
+        <div style={{padding:'14px 80px 16px', display:'flex', justifyContent:'space-between', alignItems:'center', borderTop:`1px solid ${PAL.paperShade}`, background:PAL.paper}}>
+          <div style={{display:'flex', gap:6}}>
+            {['1×','2×','3×'].map((s,i)=>(
+              <button key={s} style={{
+                fontFamily:'JetBrains Mono', fontWeight:700, fontSize:11,
+                padding:'6px 10px', border:`1.2px solid ${PAL.ink}`,
+                background: i===1?PAL.ink:PAL.paper, color: i===1?PAL.paper:PAL.ink,
+              }}>{s}</button>
+            ))}
+          </div>
+          <div style={{fontSize:10.5, color:PAL.inkSoft, fontFamily:'Fraunces', fontStyle:'italic'}}>{honey} honey</div>
+          <button style={{
+            fontFamily:'JetBrains Mono', fontWeight:700, fontSize:11,
+            padding:'6px 12px', border:`1.2px solid ${PAL.ink}`, background:PAL.paper
+          }}>‖ PAUSE</button>
+        </div>
+      </div>
+    );
+  }
+
+  // ---- Screen B — between waves ----
+  function ScreenB() {
+    return (
+      <div style={{width:'100%', height:'100%', position:'relative', background:PAL.paper, display:'flex', flexDirection:'column'}}>
+        <TopBar wave="13 / 30" hp={1.0}/>
+        <CurrencyStrip/>
+        <div style={{flex:1, position:'relative'}}>
+          <svg width="100%" height="100%" viewBox="0 0 390 600" preserveAspectRatio="xMidYMid slice" style={{position:'absolute', inset:0}}>
+            <rect width="390" height="600" fill="url(#grass-tile)"/>
+          </svg>
+          {/* a few wildflowers */}
+          {[[60,120],[320,90],[280,260],[80,300],[330,440]].map(([x,y],i)=>(
+            <svg key={i} style={{position:'absolute', left:x, top:y}} width="20" height="20" viewBox="0 0 20 20">
+              <g filter="url(#rough-1)">
+                <circle cx="10" cy="10" r="3" fill={PAL.honey} stroke={PAL.ink} strokeWidth="0.6"/>
+                <circle cx="6" cy="8" r="2" fill={PAL.jelly} stroke={PAL.ink} strokeWidth="0.5"/>
+                <circle cx="14" cy="8" r="2" fill={PAL.jelly} stroke={PAL.ink} strokeWidth="0.5"/>
+                <circle cx="8" cy="14" r="2" fill={PAL.jelly} stroke={PAL.ink} strokeWidth="0.5"/>
+                <circle cx="13" cy="13" r="2" fill={PAL.jelly} stroke={PAL.ink} strokeWidth="0.5"/>
+              </g>
+            </svg>
+          ))}
+          {/* Idle bees orbiting */}
+          {[0,1,2,3,4].map(i=>(
+            <div key={i} style={{
+              position:'absolute', left:'50%', bottom:60,
+              animation:`cb-spin ${10+i*2}s linear infinite`,
+              transformOrigin:`0 -${60+i*8}px`
+            }}>
+              <div style={{transform:`translate(${Math.cos(i)*50}px,${-60-i*8}px)`}}>
+                <svg viewBox="0 0 64 64" width="22" height="22">
+                  <ellipse cx="32" cy="32" rx="6" ry="4" fill={PAL.honey} stroke={PAL.ink} strokeWidth="0.8"/>
+                  <line x1="28" y1="32" x2="36" y2="32" stroke={PAL.ink} strokeWidth="1.2"/>
+                </svg>
+              </div>
+            </div>
+          ))}
+          <div style={{position:'absolute', bottom:0, left:'50%', transform:'translateX(-50%)'}}>
+            <WildNestHive size={220} hp={1.0}/>
+          </div>
+          {/* "Tap READY" hint */}
+          <div style={{position:'absolute', top:200, left:0, right:0, textAlign:'center', fontFamily:'Fraunces', fontStyle:'italic', fontSize:14, color:PAL.inkSoft}}>
+            <div>The hive rests.</div>
+            <div style={{fontSize:11, marginTop:4, letterSpacing:'0.1em'}}>NEXT WAVE: HORNET FLIGHT · BIRD</div>
+          </div>
+        </div>
+        <QueenPortrait expr="calm"/>
+        {/* Full action bar */}
+        <div style={{padding:'14px 12px 16px', display:'grid', gridTemplateColumns:'1fr 1fr 1fr 1.4fr', gap:8, borderTop:`1px solid ${PAL.paperShade}`, background:PAL.paper}}>
+          {['ROLES','BUILD','BOONS'].map(label=>(
+            <button key={label} style={{
+              fontFamily:'JetBrains Mono', fontWeight:700, fontSize:10.5, letterSpacing:'0.06em',
+              padding:'10px 0', border:`1.2px solid ${PAL.ink}`, background:PAL.paper,
+            }}>{label}</button>
+          ))}
+          <button style={{
+            fontFamily:'Fraunces', fontWeight:700, fontSize:13, letterSpacing:'0.04em',
+            padding:'10px 0', border:`1.6px solid ${PAL.ink}`, background:PAL.honey,
+            boxShadow:`3px 3px 0 ${PAL.ink}`
+          }}>READY ▶</button>
+        </div>
+      </div>
+    );
+  }
+
+  function App({ which }) {
+    return (
+      <>
+        <InkDefs/>
+        <AnimStyles/>
+        {which==='a' ? <ScreenA/> : <ScreenB/>}
+      </>
+    );
+  }
+  ReactDOM.createRoot(document.getElementById('screen-a')).render(<App which="a"/>);
+  ReactDOM.createRoot(document.getElementById('screen-b')).render(<App which="b"/>);
+</script>
+</body>
+</html>

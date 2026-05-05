@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>Comb At Me Bro — VFX Gallery</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root { --paper:#F5EBD6; --paper2:#E8DCBF; --ink:#3A2818; --inkSoft:#6B5A45; --rule:#C8C0AD;}
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--paper); color:var(--ink); font-family:'JetBrains Mono', monospace; padding:48px 56px 96px;}
+  header{max-width:1280px; margin:0 auto 28px;}
+  .eyebrow{font-size:11px; letter-spacing:0.18em; color:var(--inkSoft); text-transform:uppercase; margin:0 0 10px;}
+  h1{font-family:'Fraunces',serif; font-weight:700; font-size:38px; margin:0 0 12px;}
+  .lede{font-size:12px; color:var(--inkSoft); margin:0; max-width:680px; line-height:1.6;}
+  h2.section{max-width:1280px; margin:42px auto 12px; font-family:'Fraunces',serif; font-size:22px; font-weight:600; border-top:1px solid var(--ink); padding-top:18px; display:flex; justify-content:space-between; align-items:baseline;}
+  h2.section .count{font-family:'JetBrains Mono'; font-size:11px; color:var(--inkSoft); letter-spacing:0.1em; font-weight:500;}
+  .grid{max-width:1280px; margin:0 auto; display:grid; grid-template-columns:repeat(4,1fr); gap:14px;}
+  .card{border:1px solid var(--ink); background:var(--paper); overflow:hidden;}
+  .stage{aspect-ratio:3/2; border-bottom:1px solid var(--ink); position:relative; overflow:hidden;}
+  .stage > svg{position:absolute; inset:0; width:100%; height:100%;}
+  .meta{padding:8px 10px;}
+  .meta h3{font-family:'Fraunces',serif; font-size:13px; font-weight:600; margin:0 0 2px;}
+  .meta p{font-size:9.5px; color:var(--inkSoft); line-height:1.4; margin:0;}
+  footer{max-width:1280px; margin:48px auto 0; font-size:10.5px; color:var(--inkSoft); border-top:1px solid var(--rule); padding-top:18px;}
+</style>
+</head>
+<body>
+
+<header>
+  <p class="eyebrow">Subject 05 · Animations &amp; VFX · The Heart</p>
+  <h1>VFX gallery</h1>
+  <p class="lede">21 live SVG animations across hive, swarm, combat, status, HUD, and meta. Every cell is animating right now — these are loop demos for evaluation; bake to PNG sprite sheets later.</p>
+</header>
+
+<div id="root"></div>
+
+<footer>cb_at_me_bro · vfx v1 · all loops live · grouped by system</footer>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="cb/style.jsx"></script>
+<script type="text/babel" src="cb/anim.jsx"></script>
+<script type="text/babel" src="cb/vfx.jsx"></script>
+
+<script type="text/babel">
+const { InkDefs } = window.CAMB;
+const { AnimStyles } = window.CAMB_ANIM;
+const { VFX_LIST } = window.CAMB_VFX;
+
+const groups = ['HIVE','SWARM','COMBAT','STATUS','HUD','META'];
+
+function App() {
+  return (
+    <>
+      <InkDefs/>
+      <AnimStyles/>
+      {groups.map(g=>{
+        const items = VFX_LIST.filter(v=>v.group===g);
+        return (
+          <React.Fragment key={g}>
+            <h2 className="section">
+              <span>{g}</span>
+              <span className="count">{items.length} effect{items.length===1?'':'s'}</span>
+            </h2>
+            <div className="grid">
+              {items.map(v=>(
+                <div className="card" key={v.id}>
+                  <div className="stage"><v.Comp/></div>
+                  <div className="meta">
+                    <h3>{v.name}</h3>
+                    <p>{v.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </React.Fragment>
+        );
+      })}
+    </>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

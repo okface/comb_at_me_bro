@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>Comb At Me Bro — Structures</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root { --paper:#F5EBD6; --paper2:#E8DCBF; --ink:#3A2818; --inkSoft:#6B5A45; --rule:#C8C0AD; --sage:#C8D89A;}
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--paper); color:var(--ink); font-family:'JetBrains Mono', monospace; padding:48px 56px 96px;}
+  header{max-width:1200px; margin:0 auto 28px;}
+  .eyebrow{font-size:11px; letter-spacing:0.18em; color:var(--inkSoft); text-transform:uppercase; margin:0 0 10px;}
+  h1{font-family:'Fraunces',serif; font-weight:700; font-size:38px; margin:0 0 12px;}
+  .lede{font-size:12px; color:var(--inkSoft); margin:0; max-width:680px; line-height:1.6;}
+  .grid{max-width:1200px; margin:0 auto; display:grid; grid-template-columns:repeat(3,1fr); gap:18px;}
+  .card{border:1px solid var(--ink); background:var(--paper); padding:14px;}
+  .stage{height:140px; background:var(--sage); border:1px solid var(--ink); display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden;}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px;}
+  .substage{height:90px; background:var(--paper2); border:1px solid var(--rule); display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden;}
+  .substage .lbl{position:absolute; top:4px; left:6px; font-size:8.5px; letter-spacing:0.1em; color:var(--inkSoft);}
+  @keyframes build-grow {
+    0% { transform: scale(0.1); opacity:0; }
+    60% { transform: scale(1.1); opacity:1; }
+    80% { transform: scale(0.95); }
+    100% { transform: scale(1); opacity:1; }
+  }
+  @keyframes sparkle {
+    0%,100% { opacity:0; }
+    50% { opacity:1; }
+  }
+  .build-anim{animation: build-grow 2.4s ease-out infinite;}
+  .spark{position:absolute; width:4px; height:4px; background:#F2C24A; border-radius:50%;}
+  h3{font-family:'Fraunces',serif; font-size:16px; margin:10px 0 4px;}
+  .row{display:flex; align-items:center; justify-content:space-between; margin-top:4px;}
+  .cost{font-size:11px; font-weight:700; color:#B66B1E;}
+  p{font-size:11px; color:var(--inkSoft); line-height:1.5; margin:6px 0 0;}
+  footer{max-width:1200px; margin:48px auto 0; font-size:10.5px; color:var(--inkSoft); border-top:1px solid var(--rule); padding-top:18px;}
+</style>
+</head>
+<body>
+
+<header>
+  <p class="eyebrow">Subject 04 · Structures · Build</p>
+  <h1>Structure roster</h1>
+  <p class="lede">Ten buildings, top-down. Each card shows the idle state (left big stage), the live build-up animation with sparkles (right top), and a tile-able alt frame (right bottom).</p>
+</header>
+
+<div class="grid" id="grid"></div>
+
+<footer>cb_at_me_bro · structures v1 · build-up: scale + sparkles · idle: subtle breath</footer>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="cb/style.jsx"></script>
+<script type="text/babel" src="cb/anim.jsx"></script>
+<script type="text/babel" src="cb/structures.jsx"></script>
+
+<script type="text/babel">
+const { PAL, InkDefs } = window.CAMB;
+const { AnimStyles } = window.CAMB_ANIM;
+const { STRUCTURES } = window.CAMB_STRUCT;
+
+function Sprite({ Comp, size=88 }) {
+  return (
+    <svg viewBox="0 0 64 64" width={size} height={size} style={{overflow:'visible', display:'block'}}>
+      <Comp/>
+    </svg>
+  );
+}
+
+function Sparkles() {
+  const ss = [[20,20,0],[60,30,0.4],[40,70,0.8],[70,60,1.2],[15,55,1.6]];
+  return (
+    <>
+      {ss.map(([x,y,d],i)=>(
+        <span key={i} className="spark" style={{left:`${x}%`, top:`${y}%`, animation:`sparkle 1.6s ease-in-out infinite`, animationDelay:`${d}s`}}/>
+      ))}
+    </>
+  );
+}
+
+function Card({ s }) {
+  return (
+    <div className="card">
+      <div className="stage">
+        <div className="cb-breathe"><Sprite Comp={s.Comp} size={100}/></div>
+      </div>
+      <div className="row2">
+        <div className="substage">
+          <span className="lbl">BUILD-UP</span>
+          <Sparkles/>
+          <div className="build-anim"><Sprite Comp={s.Comp} size={70}/></div>
+        </div>
+        <div className="substage">
+          <span className="lbl">IDLE</span>
+          <Sprite Comp={s.Comp} size={70}/>
+        </div>
+      </div>
+      <div className="row">
+        <h3>{s.name}</h3>
+        <span className="cost">{s.cost}</span>
+      </div>
+      <p>{s.desc}</p>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <>
+      <InkDefs/>
+      <AnimStyles/>
+      {STRUCTURES.map(s=> <Card key={s.id} s={s}/>)}
+    </>
+  );
+}
+ReactDOM.createRoot(document.getElementById('grid')).render(<App/>);
+</script>
+</body>
+</html>

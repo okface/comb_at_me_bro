@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>Comb At Me Bro — Visual Direction</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper:#F5EBD6; --paper2:#E8DCBF; --paperShade:#D9CFB6; --ink:#3A2818; --inkSoft:#6B5A45;
+    --honey:#F2C24A; --honeyDark:#A8741E; --rust:#A8351E; --sage:#C8D89A; --jelly:#C8B5E8; --rule:#C8C0AD;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0; padding:0;}
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:'JetBrains Mono', monospace;
+  }
+  .wrap{max-width:1200px; margin:0 auto; padding:64px 56px 96px;}
+
+  /* Hero */
+  .hero{position:relative; padding:48px 0 64px; border-bottom:1px solid var(--ink);}
+  .hero .stamp{
+    display:inline-block; padding:4px 10px; border:1.2px solid var(--ink); background:var(--honey);
+    font-size:10px; letter-spacing:0.2em; transform:rotate(-2deg);
+  }
+  .hero h1{
+    font-family:'Fraunces', serif; font-weight:700; font-size:88px; line-height:0.95;
+    letter-spacing:-0.025em; margin:24px 0 6px; max-width:880px;
+  }
+  .hero h1 em{font-style:italic; color:var(--honeyDark);}
+  .hero .sub{font-family:'Fraunces', serif; font-style:italic; font-size:22px; color:var(--inkSoft); margin:12px 0 0;}
+  .hero .meta{display:flex; gap:48px; margin-top:36px; font-size:11px; letter-spacing:0.1em; color:var(--inkSoft);}
+  .hero .meta b{display:block; color:var(--ink); font-family:'JetBrains Mono'; font-weight:700; font-size:11px; letter-spacing:0.15em; margin-bottom:4px;}
+
+  /* Section header */
+  h2.sec{
+    font-family:'Fraunces', serif; font-weight:700; font-size:32px; margin:64px 0 18px;
+    display:flex; align-items:baseline; gap:14px;
+  }
+  h2.sec .num{
+    font-family:'JetBrains Mono'; font-size:11px; color:var(--inkSoft); font-weight:500;
+    letter-spacing:0.2em; padding-bottom:6px;
+  }
+  .sec-lede{font-size:12.5px; color:var(--inkSoft); line-height:1.65; max-width:680px; margin:0 0 28px;}
+
+  /* Card grid */
+  .grid{display:grid; gap:18px;}
+  .grid.c2{grid-template-columns:1fr 1fr;}
+  .grid.c3{grid-template-columns:repeat(3,1fr);}
+
+  .card{
+    border:1.4px solid var(--ink); background:var(--paper); position:relative;
+    text-decoration:none; color:inherit; display:flex; flex-direction:column; overflow:hidden;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .card:hover{transform:translate(-2px,-2px); box-shadow:6px 6px 0 var(--ink);}
+  .card .thumb{aspect-ratio:16/10; border-bottom:1.4px solid var(--ink); position:relative; overflow:hidden;}
+  .card .thumb svg{position:absolute; inset:0; width:100%; height:100%; display:block;}
+  .card .body{padding:18px 18px 20px; flex:1; display:flex; flex-direction:column; gap:6px;}
+  .card .ix{font-family:'JetBrains Mono'; font-size:10.5px; letter-spacing:0.18em; color:var(--inkSoft);}
+  .card h3{font-family:'Fraunces', serif; font-weight:700; font-size:22px; margin:0; letter-spacing:-0.01em;}
+  .card p{font-size:11.5px; color:var(--inkSoft); line-height:1.55; margin:6px 0 0;}
+  .card .tags{display:flex; gap:6px; margin-top:10px; flex-wrap:wrap;}
+  .card .tag{font-size:9px; letter-spacing:0.1em; padding:3px 7px; background:var(--paper2); border:1px solid var(--paperShade); color:var(--inkSoft); font-weight:600;}
+
+  /* Card big */
+  .card.big .thumb{aspect-ratio:5/3;}
+  .card.big h3{font-size:28px;}
+
+  /* Process strip */
+  .process{margin-top:64px; border:1.4px solid var(--ink); padding:24px 28px; background:var(--paper2); display:grid; grid-template-columns:repeat(4,1fr); gap:24px;}
+  .process .step{position:relative;}
+  .process .step .step-num{font-family:'Fraunces', serif; font-style:italic; font-size:32px; color:var(--honeyDark); line-height:1;}
+  .process .step h4{font-family:'Fraunces', serif; font-size:14px; margin:8px 0 4px; font-weight:600;}
+  .process .step p{font-size:11px; color:var(--inkSoft); line-height:1.5; margin:0;}
+
+  footer{
+    margin-top:80px; padding-top:24px; border-top:1px solid var(--rule);
+    font-size:11px; color:var(--inkSoft); letter-spacing:0.1em; display:flex; justify-content:space-between;
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- HERO -->
+  <header class="hero">
+    <span class="stamp">VISUAL DIRECTION · v1</span>
+    <h1>Comb at me, <em>bro</em>.</h1>
+    <p class="sub">A queen's defence — visual direction package.</p>
+    <div class="meta">
+      <div><b>FORMAT</b>Mobile · portrait · 390×844</div>
+      <div><b>STYLE</b>Hand-drawn picture book</div>
+      <div><b>SCOPE</b>8 design files · 90+ live SVG sprites</div>
+      <div><b>STATUS</b>Direction set · ready for sprite-sheet pass</div>
+    </div>
+  </header>
+
+  <!-- 01 — DIRECTION -->
+  <h2 class="sec">Direction <span class="num">— 01 / EXPLORATION</span></h2>
+  <p class="sec-lede">Three-way comparison was the entry point: flat vector, hand-drawn picture book, chunky pixel. We landed on hand-drawn. Below: the comparison itself, then the foundation laid down for everything that follows.</p>
+  <div class="grid c2">
+    <a class="card big" href="Style Comparison.html">
+      <div class="thumb">
+        <svg viewBox="0 0 240 150" preserveAspectRatio="xMidYMid slice">
+          <rect width="240" height="150" fill="#F5EBD6"/>
+          <rect x="6" y="6" width="74" height="138" fill="#E8DCBF" stroke="#3A2818" strokeWidth="1.2"/>
+          <rect x="83" y="6" width="74" height="138" fill="#F2C24A" stroke="#3A2818" strokeWidth="1.4"/>
+          <rect x="160" y="6" width="74" height="138" fill="#3A2818"/>
+          <text x="43" y="82" textAnchor="middle" fontSize="10" fontFamily="JetBrains Mono" fontWeight="700" fill="#3A2818">FLAT</text>
+          <text x="120" y="82" textAnchor="middle" fontSize="11" fontFamily="Fraunces" fontWeight="700" fill="#3A2818">HAND-DRAWN ✓</text>
+          <text x="197" y="82" textAnchor="middle" fontSize="10" fontFamily="JetBrains Mono" fontWeight="700" fill="#F2C24A">PIXEL</text>
+        </svg>
+      </div>
+      <div class="body">
+        <span class="ix">SUBJECT 01 · COMPARISON</span>
+        <h3>Style Comparison</h3>
+        <p>Three art directions × five subjects on a design canvas, with native-scale strip beneath. Picked direction marked.</p>
+        <div class="tags"><span class="tag">3 styles</span><span class="tag">15 cards</span><span class="tag">native preview</span></div>
+      </div>
+    </a>
+
+    <a class="card big" href="Style Kit.html">
+      <div class="thumb" style="background:#F5EBD6;">
+        <svg viewBox="0 0 240 150" preserveAspectRatio="xMidYMid slice">
+          <rect width="240" height="150" fill="#F5EBD6" filter="url(#hero-noise)"/>
+          <defs>
+            <filter id="hero-noise"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2"/><feColorMatrix values="0 0 0 0 0.23  0 0 0 0 0.16  0 0 0 0 0.10  0 0 0 0.06 0"/><feComposite in2="SourceGraphic" operator="in"/></filter>
+          </defs>
+          <g transform="translate(20,30)">
+            <rect width="20" height="20" fill="#F5EBD6" stroke="#3A2818"/>
+            <rect x="22" width="20" height="20" fill="#E8DCBF" stroke="#3A2818"/>
+            <rect x="44" width="20" height="20" fill="#3A2818"/>
+            <rect x="66" width="20" height="20" fill="#F2C24A" stroke="#3A2818"/>
+            <rect x="88" width="20" height="20" fill="#A8351E" stroke="#3A2818"/>
+            <rect x="110" width="20" height="20" fill="#C8D89A" stroke="#3A2818"/>
+            <rect x="132" width="20" height="20" fill="#C8B5E8" stroke="#3A2818"/>
+            <rect x="154" width="20" height="20" fill="#A8741E" stroke="#3A2818"/>
+          </g>
+          <text x="20" y="80" fontFamily="Fraunces" fontWeight="700" fontSize="22" fill="#3A2818">Aa Bb Cc</text>
+          <text x="20" y="105" fontFamily="JetBrains Mono" fontSize="10" fill="#6B5A45" letterSpacing="0.1em">FRAUNCES + JETBRAINS</text>
+          <g transform="translate(150,80)">
+            <polygon points="20,2 38,12 38,30 20,40 2,30 2,12" fill="#F2C24A" stroke="#3A2818" strokeWidth="1.4"/>
+          </g>
+        </svg>
+      </div>
+      <div class="body">
+        <span class="ix">SUBJECT 02 · FOUNDATION</span>
+        <h3>Style Kit</h3>
+        <p>Palette, type, paper grain, ink-rough SVG filters, and animation primitives. Every other file imports from here.</p>
+        <div class="tags"><span class="tag">8 colors</span><span class="tag">2 fonts</span><span class="tag">4 ink filters</span><span class="tag">12 anims</span></div>
+      </div>
+    </a>
+  </div>
+
+  <!-- 02 — CAST -->
+  <h2 class="sec">The cast <span class="num">— 02 / CHARACTERS &amp; STRUCTURES</span></h2>
+  <p class="sec-lede">Bees, threats, and the structures the queen builds to hold them off. Every sprite is live SVG — walk cycles, death animations, build-up sequences all looping.</p>
+  <div class="grid c3">
+    <a class="card" href="Bee Roles.html">
+      <div class="thumb" style="background:#C8D89A;">
+        <svg viewBox="0 0 240 150" preserveAspectRatio="xMidYMid meet">
+          <ellipse cx="120" cy="78" rx="60" ry="40" fill="#F2C24A" stroke="#3A2818" strokeWidth="2"/>
+          <line x1="80" y1="78" x2="160" y2="78" stroke="#3A2818" strokeWidth="3"/>
+          <line x1="100" y1="78" x2="100" y2="100" stroke="#3A2818" strokeWidth="3"/>
+          <line x1="140" y1="78" x2="140" y2="100" stroke="#3A2818" strokeWidth="3"/>
+          <path d="M 90,40 q 30,-20 60,0" stroke="#3A2818" strokeWidth="2" fill="none"/>
+          <path d="M 100,30 L 105,42" stroke="#3A2818" strokeWidth="2"/>
+          <path d="M 140,30 L 135,42" stroke="#3A2818" strokeWidth="2"/>
+          <circle cx="108" cy="70" r="3" fill="#3A2818"/>
+          <circle cx="132" cy="70" r="3" fill="#3A2818"/>
+        </svg>
+      </div>
+      <div class="body">
+        <span class="ix">03 · YOUR ARMY</span>
+        <h3>Bee Roles</h3>
+        <p>Queen with three expressions, plus seven roles — Forager, Builder, Guard, Striker, Princess, Drone, Nurse.</p>
+      </div>
+    </a>
+
+    <a class="card" href="Enemy Roster.html">
+      <div class="thumb" style="background:#C8D89A;">
+        <svg viewBox="0 0 240 150" preserveAspectRatio="xMidYMid meet">
+          <ellipse cx="120" cy="80" rx="44" ry="28" fill="#A8351E" stroke="#3A2818" strokeWidth="2"/>
+          <path d="M 76,80 q 0,-30 44,-30 q 44,0 44,30" fill="none" stroke="#3A2818" strokeWidth="2"/>
+          <line x1="76" y1="80" x2="164" y2="80" stroke="#3A2818" strokeWidth="2"/>
+          <path d="M 86,40 L 92,52" stroke="#3A2818" strokeWidth="2.4"/>
+          <path d="M 154,40 L 148,52" stroke="#3A2818" strokeWidth="2.4"/>
+          <polygon points="120,108 110,124 130,124" fill="#3A2818"/>
+          <circle cx="106" cy="70" r="3" fill="#F2C24A"/>
+          <circle cx="134" cy="70" r="3" fill="#F2C24A"/>
+        </svg>
+      </div>
+      <div class="body">
+        <span class="ix">04 · THREATS</span>
+        <h3>Enemy Roster</h3>
+        <p>Ten threats plus parasitic mites. Walk + death cycles, four tiers from pest to boss.</p>
+      </div>
+    </a>
+
+    <a class="card" href="Structures.html">
+      <div class="thumb" style="background:#C8D89A;">
+        <svg viewBox="0 0 240 150" preserveAspectRatio="xMidYMid meet">
+          <g transform="translate(120,75)">
+            <polygon points="0,-32 28,-16 28,16 0,32 -28,16 -28,-16" fill="#F2C24A" stroke="#3A2818" strokeWidth="2"/>
+            <polygon points="0,-22 18,-10 18,10 0,22 -18,10 -18,-10" fill="#A8741E" opacity="0.4" stroke="#3A2818" strokeWidth="1"/>
+            <polygon points="0,-12 8,-5 8,5 0,12 -8,5 -8,-5" fill="#3A2818"/>
+          </g>
+        </svg>
+      </div>
+      <div class="body">
+        <span class="ix">05 · BUILD MENU</span>
+        <h3>Structures</h3>
+        <p>Ten buildings — walls, towers, vats, brood chambers — with idle &amp; build-up animations.</p>
+      </div>
+    </a>
+  </div>
+
+  <!-- 03 — IN MOTION -->
+  <h2 class="sec">In motion <span class="num">— 03 / ANIMATION &amp; SCREENS</span></h2>
+  <p class="sec-lede">The systems running underneath the cast: VFX library, every UI screen at native scale, and the gameplay view in two states.</p>
+  <div class="grid c3">
+    <a class="card" href="VFX Gallery.html">
+      <div class="thumb" style="background:#3A2818; color:#F5EBD6;">
+        <svg viewBox="0 0 240 150" preserveAspectRatio="xMidYMid meet">
+          <ellipse cx="120" cy="75" rx="38" ry="26" fill="#F2C24A" opacity="0.4"/>
+          <ellipse cx="120" cy="75" rx="22" ry="14" fill="#F2C24A" opacity="0.7"/>
+          <g stroke="#F2C24A" strokeWidth="2" strokeLinecap="round">
+            <line x1="100" y1="55" x2="120" y2="75"/>
+            <line x1="140" y1="55" x2="120" y2="75"/>
+            <line x1="120" y1="40" x2="120" y2="75"/>
+            <line x1="100" y1="95" x2="120" y2="75"/>
+            <line x1="140" y1="95" x2="120" y2="75"/>
+          </g>
+          <text x="120" y="80" textAnchor="middle" fontFamily="Fraunces" fontWeight="700" fontSize="18" fill="#3A2818">POW</text>
+        </svg>
+      </div>
+      <div class="body">
+        <span class="ix">06 · THE HEART</span>
+        <h3>VFX Gallery</h3>
+        <p>21 live animations across hive, swarm, combat, status, HUD, and meta systems.</p>
+      </div>
+    </a>
+
+    <a class="card" href="UI Screens.html">
+      <div class="thumb" style="background:#E8DCBF;">
+        <svg viewBox="0 0 240 150" preserveAspectRatio="xMidYMid meet">
+          <rect x="50" y="14" width="48" height="120" fill="#F5EBD6" stroke="#3A2818" strokeWidth="1.4"/>
+          <rect x="104" y="14" width="48" height="120" fill="#F5EBD6" stroke="#3A2818" strokeWidth="1.4"/>
+          <rect x="158" y="14" width="48" height="120" fill="#F5EBD6" stroke="#3A2818" strokeWidth="1.4"/>
+          <rect x="56" y="22" width="36" height="6" fill="#3A2818"/>
+          <rect x="56" y="40" width="24" height="4" fill="#A8741E"/>
+          <rect x="56" y="50" width="36" height="60" fill="#F2C24A" opacity="0.5"/>
+          <rect x="110" y="22" width="36" height="6" fill="#3A2818"/>
+          <circle cx="128" cy="70" r="14" fill="#F2C24A" stroke="#3A2818"/>
+          <rect x="164" y="22" width="36" height="6" fill="#3A2818"/>
+          <rect x="164" y="100" width="36" height="14" fill="#F2C24A" stroke="#3A2818"/>
+        </svg>
+      </div>
+      <div class="body">
+        <span class="ix">07 · UI</span>
+        <h3>UI Screens</h3>
+        <p>Eleven portrait phone frames — title, memory tree, loadout, shop, build, boons, pause, summary, win, lose, settings.</p>
+      </div>
+    </a>
+
+    <a class="card" href="Gameplay Screen.html">
+      <div class="thumb" style="background:#C8D89A;">
+        <svg viewBox="0 0 240 150" preserveAspectRatio="xMidYMid meet">
+          <rect x="20" y="10" width="80" height="130" fill="#F5EBD6" stroke="#3A2818" strokeWidth="1.2"/>
+          <rect x="20" y="10" width="80" height="14" fill="#F5EBD6" stroke="#3A2818" strokeWidth="0.8"/>
+          <rect x="22" y="14" width="60" height="6" fill="#F2C24A"/>
+          <rect x="22" y="28" width="76" height="90" fill="#C8D89A"/>
+          <ellipse cx="60" cy="90" rx="16" ry="13" fill="#F2C24A" stroke="#3A2818" strokeWidth="1"/>
+          <rect x="22" y="120" width="76" height="20" fill="#F5EBD6"/>
+          <rect x="140" y="10" width="80" height="130" fill="#F5EBD6" stroke="#3A2818" strokeWidth="1.2"/>
+          <rect x="140" y="10" width="80" height="14" fill="#F5EBD6"/>
+          <rect x="142" y="14" width="22" height="6" fill="#A8351E"/>
+          <rect x="142" y="28" width="76" height="90" fill="#C8D89A"/>
+          <rect x="142" y="28" width="76" height="14" fill="#A8351E" opacity="0.4"/>
+          <ellipse cx="180" cy="92" rx="14" ry="12" fill="#F2C24A" stroke="#A8351E" strokeWidth="1.4"/>
+          <circle cx="160" cy="50" r="6" fill="#A8351E"/>
+          <circle cx="200" cy="60" r="5" fill="#A8351E"/>
+          <rect x="142" y="120" width="76" height="20" fill="#F5EBD6"/>
+        </svg>
+      </div>
+      <div class="body">
+        <span class="ix">08 · COMBAT VIEW</span>
+        <h3>Gameplay Screen</h3>
+        <p>Top-down combat at native scale. Calm + chaos states with live VFX, damage numbers, and ability tray.</p>
+      </div>
+    </a>
+  </div>
+
+  <!-- PROCESS -->
+  <div class="process">
+    <div class="step">
+      <div class="step-num">i.</div>
+      <h4>Compare</h4>
+      <p>Three art directions × five subjects. Hand-drawn picked for warmth + readability.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">ii.</div>
+      <h4>Found</h4>
+      <p>Palette, type, ink filters, animation primitives — every later file imports them.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">iii.</div>
+      <h4>Populate</h4>
+      <p>Cast: bees, enemies, structures. Every sprite live, every animation looping.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">iv.</div>
+      <h4>Compose</h4>
+      <p>VFX, UI screens, gameplay view — all built from the same vocabulary.</p>
+    </div>
+  </div>
+
+  <footer>
+    <span>cb_at_me_bro · visual direction v1</span>
+    <span>NEXT: bake sprite sheets · prototype touch input · audio pass</span>
+  </footer>
+
+</div>
+
+</body>
+</html>
