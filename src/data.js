@@ -40,9 +40,10 @@ export const HIVE = {
 
 export const HORNET = {
   hp: 4,
-  speed: 38,         // px / sec
+  speed: 50,         // px / sec — bumped from 38 for snappier early waves
   radius: 11,
-  contactRange: 56,  // touches the hive when this close
+  contactRange: 56,
+  contactDPS: 6,
 };
 
 export const SPIDER = {
@@ -95,41 +96,41 @@ export const STRIKER = {
   speedMulRange: [0.78, 1.22],
 };
 
-// Procedural wave generator with attacker variety.
-//   Wave 1-3: hornets only (teaching loop)
-//   Wave 4: hornets + 1 spider (intro spiders)
-//   Wave 7: hornets + spiders + 1 bear (intro bears)
-//   Wave 8: hornets + spiders + 1 bear
-//   Wave 9: hornets + spiders + 2 bears
-//   Wave 10: BOSS — beekeeper with a few hornet escorts
+// Procedural wave generator. Pacing favors density over duration —
+// early waves should never feel like dead air.
+//   Wave 1: 6 hornets in 16s
+//   Wave 3: 10 hornets + 1 spider in 21s
+//   Wave 6: 15 hornets + 4 spiders + 1 bear in 27s
+//   Wave 9: 21 hornets + 7 spiders + 2 bears in 34s
+//   Wave 10: boss (beekeeper + hornet/spider escorts)
 export function generateWave(n) {
-  // wave 10 is the boss — overrides default composition
   if (n === 10) {
-    const spawns = [
-      { type: 'beekeeper', t: 1 },
-      { type: 'hornet', t: 5 },
-      { type: 'hornet', t: 9 },
-      { type: 'hornet', t: 14 },
-      { type: 'hornet', t: 18 },
-      { type: 'spider', t: 23 },
-      { type: 'hornet', t: 28 },
-    ];
-    return { spawns, duration: 50 };
+    return {
+      spawns: [
+        { type: 'beekeeper', t: 1 },
+        { type: 'hornet', t: 4 },
+        { type: 'hornet', t: 7 },
+        { type: 'hornet', t: 11 },
+        { type: 'hornet', t: 15 },
+        { type: 'spider', t: 19 },
+        { type: 'hornet', t: 23 },
+        { type: 'hornet', t: 27 },
+      ],
+      duration: 42,
+    };
   }
 
-  const hornetCount = 4 + Math.floor(n * 1.6);
-  const spiderCount = n >= 4 ? n - 3 : 0;
-  const bearCount = n === 7 ? 1 : n === 8 ? 1 : n === 9 ? 2 : 0;
-  const duration = 18 + n * 3;
+  const hornetCount = 5 + Math.floor(n * 1.8);
+  const spiderCount = n >= 3 ? n - 2 : 0;     // intro at wave 3 (was 4)
+  const bearCount = (n >= 6 && n <= 9) ? (n === 9 ? 2 : 1) : 0;  // intro wave 6 (was 7)
+  const duration = 14 + n * 2.2;
   const spawns = [];
 
-  // hornets — evenly distributed
   const hornetStep = duration / Math.max(1, hornetCount);
   for (let i = 0; i < hornetCount; i++) {
-    const jitter = i % 2 === 0 ? 0 : 0.6;
-    spawns.push({ type: 'hornet', t: 1 + hornetStep * i + jitter });
+    const jitter = i % 2 === 0 ? 0 : 0.45;
+    spawns.push({ type: 'hornet', t: 0.4 + hornetStep * i + jitter });
   }
-  // spiders — back half
   if (spiderCount > 0) {
     const spiderStep = (duration * 0.65) / Math.max(1, spiderCount);
     const spiderStart = duration * 0.30;
@@ -137,7 +138,6 @@ export function generateWave(n) {
       spawns.push({ type: 'spider', t: spiderStart + spiderStep * i });
     }
   }
-  // bears — single, dramatic, mid-wave
   if (bearCount > 0) {
     const bearStep = (duration * 0.55) / Math.max(1, bearCount);
     const bearStart = duration * 0.40;
@@ -160,6 +160,8 @@ export const ECONOMY = {
   // bonus granted on wave clear (before B2.5's mutually-exclusive locks)
   waveClearHoney: 25,
   waveClearLarvae: 2,
+  waveClearHPRegen: 10,        // base HP healed when a wave clears
+  waveClearHPRegenArchitect: 5, // additional HP healed per architect rank
   honeyStorageCap: 250,  // raised by Architects (B2.4)
 };
 

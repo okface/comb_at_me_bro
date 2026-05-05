@@ -56,6 +56,8 @@ export function createState(width, height) {
     pendingBoonPick: false,
     // tap-to-prioritize: strikers home this attacker until it dies
     priorityTarget: null,
+    // screen shake intensity (decays each frame)
+    shakeAmount: 0,
   };
 }
 
@@ -199,6 +201,7 @@ export function restartRun(state) {
   state.boons = [];
   state.pendingBoonPick = false;
   state.priorityTarget = null;
+  state.shakeAmount = 0;
   for (const k of ROLE_ORDER) state.roles[k].rank = 0;
 }
 
@@ -306,6 +309,11 @@ export function resizeState(state, width, height) {
 export function updateState(state, dt) {
   state.hive.breathPhase += dt;
 
+  // shake decays toward zero every frame
+  if (state.shakeAmount > 0) {
+    state.shakeAmount = Math.max(0, state.shakeAmount - dt * 14);
+  }
+
   // banner ticks regardless of phase
   if (state.banner) {
     state.banner.t += dt;
@@ -351,7 +359,10 @@ export function updateState(state, dt) {
       a.x += (dx / d) * cfg.speed * dt;
       a.y += (dy / d) * cfg.speed * dt;
     } else {
-      state.hive.hp -= (cfg.contactDPS ?? HIVE.contactDPS) * dt;
+      const dpsTaken = (cfg.contactDPS ?? HIVE.contactDPS);
+      state.hive.hp -= dpsTaken * dt;
+      // accumulate shake — bigger hits, bigger shake (clamped)
+      state.shakeAmount = Math.min(8, state.shakeAmount + dpsTaken * dt * 0.45);
       if (guardDPS > 0) {
         a.hp -= guardDPS * (cfg.guardDmgMul ?? 1) * dt;
         if (a.hp <= 0 && a.deathT == null) {
@@ -475,8 +486,13 @@ export function updateState(state, dt) {
     );
     state.honey = Math.min(state.honeyCap, state.honey + honeyReward);
     state.larvae += larvaeReward;
+    // hive HP regen on wave clear (architects boost)
+    const archRank = state.roles.architect.rank;
+    const hpRegen = ECONOMY.waveClearHPRegen + archRank * ECONOMY.waveClearHPRegenArchitect;
+    state.hive.hp = Math.min(state.hive.maxHP, state.hive.hp + hpRegen);
     state.fx.push({
-      kind: 'reward', text: `+${honeyReward}🍯  +${larvaeReward}🐝`,
+      kind: 'reward',
+      text: `+${honeyReward}🍯  +${larvaeReward}🐝  +${hpRegen}♥`,
       x: state.width / 2, y: state.height * 0.5, t: 0, life: 2.0,
     });
     if (state.wave >= state.totalWaves) {

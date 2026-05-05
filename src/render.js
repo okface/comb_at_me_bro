@@ -17,6 +17,13 @@ import { PALETTE } from './data.js?v=__VERSION__';
 // Public entry
 // ============================================================================
 export function render(ctx, state) {
+  // screen shake — wraps the entire frame
+  ctx.save();
+  if (state.shakeAmount > 0.4) {
+    const sx = (Math.random() - 0.5) * state.shakeAmount;
+    const sy = (Math.random() - 0.5) * state.shakeAmount;
+    ctx.translate(sx, sy);
+  }
   drawField(ctx, state);
   if (state.phase === 'idle') drawDefensivePerimeter(ctx, state);
   drawAttackers(ctx, state);
@@ -28,6 +35,7 @@ export function render(ctx, state) {
   drawFx(ctx, state);
   drawHiveHP(ctx, state.hive);
   drawBanner(ctx, state);
+  ctx.restore();
 }
 
 // Reticle on tap-prioritized target — dashed ring + 4 corner ticks
