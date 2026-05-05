@@ -1,9 +1,9 @@
 # Comb At Me Bro
 
-A top-down portrait-orientation tower-defense / colony-management mobile web game. You play the queen bee, defending a single hive across 30 escalating waves. Allocate limited larvae and honey across five worker-bee roles (Foragers, Nurses, Guards, Strikers, Architects) to balance economy, defense, and offense. Hades-style meta-progression unlocks new *options* (not stat boosts) so failed early runs still feel productive.
+A top-down portrait-orientation tower-defense / colony-management mobile web game. You play the queen bee, defending one wild-nest hive across ten escalating waves. Allocate honey across five worker-bee roles to balance economy, defense, and offense. Each run starts under a different **Hive Condition** (run modifier) and rewards two **boons** along the way, so no two runs play the same.
 
 **Live build:** <https://okface.github.io/comb_at_me_bro/>
-*(auto-deploys on push to `main` via `.github/workflows/pages.yml`)*
+*(auto-deploys on push to `main` via `.github/workflows/pages.yml` — every deploy gets a unique cache-bust version)*
 
 ---
 
@@ -20,18 +20,23 @@ python -m http.server 8765
 
 ## Status
 
-**Phase A — Skeleton — DONE**
-Hardcoded single wave with 8 hornets, one role (Strikers) auto-volleying, hive HP, win/lose overlay. Procedural placeholder shapes only — no real art yet.
-
-### Roadmap
+The game is fully playable end-to-end with one map, ten waves, four enemy types, five investable roles, six Hive Conditions, ten boons, and a boss finale.
 
 | Phase | Scope | Status |
 |---|---|---|
 | **A — Skeleton** | Canvas + game loop + hive + hornets + striker swarm + HP + win/lose | ✅ done |
-| **B — Core loop** | Larvae + honey economy, between-wave shop UI, all 5 roles (ranks 1-3), 10 hardcoded waves | next |
-| **C — Variety** | All 4 attacker types, role ranks 4-5, boon picker every 5 waves, full 30-wave arc + final boss | |
-| **D — Meta** | Royal Memory persistence (localStorage), unlock screen between runs, starting-loadout selection | |
-| **E — Polish** | Drop in Claude Design art, animations & VFX, Heat-style replay modifiers, audio (deferred) | |
+| **B1 — Multi-wave** | Wave runner, ready button, banners, restart loop | ✅ done |
+| **B2.1 — Currency** | Honey + larvae state, HUD pills, wave-clear rewards | ✅ done |
+| **B2.2 — Roles panel** | 5 investable roles (rank 1-3), spend honey, role effects | ✅ done |
+| **B2.3 — Hive Conditions** | 6 run modifiers picked at run start | ✅ done |
+| **B2.4 — Spiders + 10 waves** | Second attacker type, longer run | ✅ done |
+| **B2.5 — Boons + pop cap** | 10 mid-run boons, Striker–Nurse cap link | ✅ done |
+| **B2.6 — Bears + Beekeeper** | Bear minibosses (waves 6-9), Beekeeper boss with smoke at wave 10 | ✅ done |
+| **B2.7 — Tap to prioritize** | Active player input — tap an enemy to focus strikers | ✅ done |
+| **B2.8 — Pacing + game feel** | Faster early waves, screen shake, wave-clear HP regen | ✅ done |
+| **B2.9 — Text + tutorial** | UX text pass, How-To-Play panel on title | ✅ done |
+| **C — Polish & meta** | Hidden synergies, royal jelly, rank 4-5 unlocks, run summary, Royal Memory persistence | next |
+| **D — Real art** | Drop in Claude Design assets, animations, audio | future |
 
 ---
 
@@ -41,126 +46,102 @@ Hardcoded single wave with 8 hornets, one role (Strikers) auto-volleying, hive H
 |---|---|
 | Platform | Phone web, GitHub Pages, portrait orientation |
 | Tech | Vanilla HTML5 canvas + JS, ES modules, no build step |
-| Run shape | Single map, 30 waves, ~25 min for a clean run |
-| Wave pacing | Discrete rounds, "Ready" button between waves |
-| Unit model | Abstract population counts — no per-bee placement; combat shown as swarm-cloud animations |
-| Map shape | Open field above the hive; attackers spawn at top edge and home toward the hive |
-| Currencies | **Larvae** (per-wave) + **Honey** (continuous) + **Royal Jelly** (rare, late-game) |
-| Meta-progression | Hades-style: each run earns **Royal Memory**; spent only on **new choices** — never stat boosts |
-| In-run boons | Pick 1-of-3 random offering every ~5 waves |
-| Damage model | Hive has HP; attackers reaching the entrance deal DoT |
-| Win condition | Survive wave 30 (final boss = beekeeper raid). Post-win: Heat-style escalating modifiers |
-| Visual style | **B · Hand-Drawn / Wild Nest** (from Claude Design v1) |
-| Palette | sage `#C8D89A`, honey `#F2C24A` / `#E8A24A`, rust `#8A3A1C`, deep ink `#3A2818`, paper `#F5EBD6` |
+| Run shape | Single map, **10 waves** (~12-15 min for a clean run) |
+| Wave pacing | Discrete rounds, "READY" button between waves |
+| Unit model | Abstract population counts — no per-bee placement |
+| Map shape | Open field above the hive; attackers home toward hive |
+| Currencies | **Honey** (continuous, foragers, spent on roles) + **Larvae** (per-wave, accumulates) |
+| Run modifier | One of six **Hive Conditions** picked at run start |
+| In-run boons | One of three picked after waves 3 and 6 |
+| Damage model | Hive HP; attackers reaching the door deal DoT |
+| Active input | Tap any enemy during combat to focus strikers on it |
+| Win condition | Survive wave 10 (Beekeeper boss with smoke AoE) |
+| Visual style | Style B · Hand-Drawn / Wild Nest (Claude Design v1) |
+| Palette | sage, honey, rust, ink, paper — full 20-token palette in `data.js` |
 
 ---
 
-## Bee roles (v0.1 ships 5; +2 in reserve)
+## Bee roles
 
-| Role | Function | rank-4 unique | v0.1 |
-|---|---|---|---|
-| **Forager** | Generates honey/sec | Waggle Dance: honey aura buff | ✅ |
-| **Nurse** | More larvae per wave | Royal Diet: next 3 larvae upgraded | ✅ |
-| **Guard** | Short-range melee at hive entrance | Stinger Wall: auto-deploy on damage | ✅ |
-| **Striker** | Long-range swarm attacker | Pheromone Trail: +50% next swarm speed | ✅ |
-| **Architect** | Builds defensive structures | False Entrance: decoy trap | ✅ |
-| Drone (male) | Comic relief; required to spawn Princess | | v0.2 |
-| Princess | Late-game; founds a secondary hive | | v0.2 |
-
-Plus the **Queen** as central HUD anchor.
-
-## Attackers (v0.1 ships 4; +6 in reserve)
-
-| Enemy | Behavior | Counter | v0.1 |
-|---|---|---|---|
-| **Hornet** | Fast aerial melee | Strikers / Guards | ✅ |
-| **Spider** | Slow ground; webs Strikers | Architects / Guards | ✅ |
-| **Bear** | Boss tier; ignores walls | Striker DPS | ✅ |
-| **Beekeeper** | Human boss; smoke AoE | Burst rush | ✅ |
-| Wasp swarm | Mini cluster, rival to your swarm | Striker DPS | v0.2 |
-| Ants | Tiny low-HP, in groups of 8-12 | AoE, walls | v0.2 |
-| Bird | Fast aerial, dives, ignores walls | Strikers | v0.2 |
-| Dragonfly | Very fast assassin, picks off Strikers | Guards rush | v0.2 |
-| Skunk | Spray AoE, disorients bees | Burst, distance | v0.2 |
-| Rival Queen | Elite; summons her own bees | Sustained | v0.2 |
-| Mites (bonus) | Non-combat parasite, infects larvae production | Cleaners (v0.2 role) | v0.2 |
-
-## Structures (v0.1 ships 2; +8 in reserve)
-
-| Structure | Function | v0.1 |
+| Role | Function | Per rank |
 |---|---|---|
-| **Propolis wall** | Basic defense block | ✅ |
-| **False entrance decoy** | Lures and traps attackers | ✅ |
-| Comb tower | Increases honey storage cap | v0.2 |
-| Watchtower | Reveals next wave's composition | v0.2 |
-| Honey vat | Bulbous storage, glows when full | v0.2 |
-| Stinger turret | Autonomous Guard emplacement | v0.2 |
-| Pheromone marker | Pulsing buff aura | v0.2 |
-| Brood chamber | Increases per-wave larva count | v0.2 |
-| Wax fence | Cheap weaker walls | v0.2 |
-| Royal chamber | Princess unlock building | v0.2 |
+| **Forager** 🍯 | Gathers honey through the wave | +0.6 honey/sec |
+| **Nurse** 🐝 | Raises bee cap, brings new larvae | +2 to swarm cap, +1 larva/wave |
+| **Guard** 🛡 | Stings any intruder at the hive door | +1.5 damage/sec at door |
+| **Striker** ⚔ | Sends larger swarms (capped by bee population) | +2 bees per volley |
+| **Architect** ⬡ | Thickens the comb | +25 HP, +80 honey storage |
+
+3 ranks each (rank 4-5 with royal jelly = Phase C).
+
+**Striker–Nurse interaction:** Striker swarm size is capped by `7 + (Nurse rank × 2)`. Pure-Striker spam without Nurses caps out at 7 bees per volley — investing in both scales offense.
+
+## Attackers
+
+| Enemy | Role | Counter |
+|---|---|---|
+| **Hornet** | Fast aerial melee, 4 HP | Strikers / Guards |
+| **Spider** | Slow ground, **eats striker particles in close range** | Burst damage / tap-priority before they bite |
+| **Bear** *(waves 6-9)* | 32 HP boss, slow but unstoppable, ignores Guards effectively | Sustained Striker DPS |
+| **Beekeeper** *(wave 10 boss)* | 70 HP, periodically deploys smoke AoE that **kills strikers entering it** | Burst between smoke phases |
+
+Wave 10 = Beekeeper + 5 hornet escorts + 1 spider. Win the wave, hold the dawn.
+
+## Hive Conditions (run modifiers — pick 1 of 3 at start)
+
+- **Plentiful Bloom** — +0.5 honey/sec base · Strikers cost +35% honey
+- **Steel Comb** — +35 max hive HP · Foragers earn 25% less honey
+- **Eager Stingers** — Strikers fire +1 extra bee per rank · Architects cost +50% honey
+- **Patient Queen** — All role upgrades cost 18% less · +1 hornet appears each wave
+- **Royal Drought** — Waves pay +50% honey · honey storage halved
+- **Lucky Larvae** — +1 larva per wave · every hornet has +1 HP
+
+## Boons (mid-run pickups — pick 1 of 3 after waves 3 and 6)
+
+- **Brutal Stinger** — Strikers deal +30% damage
+- **Forager's Blessing** — Foragers produce +60% honey
+- **Steel Resolve** — +50 max hive HP · −1 larva per wave
+- **Royal Diet** — +3 larvae per wave cleared
+- **Architect's Cunning** — +45 max hive HP · +120 honey storage
+- **Swarm Tactics** — Strikers fly 25% faster
+- **Bee-Eater's Tactic** — Strikers deal +70% damage to spiders
+- **Hive Mind** — All role upgrades cost 15% less honey
+- **Old Wax** — +8 honey at the start of every wave
+- **Eager Volley** — Strikers fire volleys 20% faster
+
+All effects stack across modifier + multiple boons via the `getEff(state)` merger in `src/game.js`.
 
 ---
 
-## Wave arc (30 waves)
-
-- **1–5** Hornets only — teaching loop
-- **6–12** Spiders enter — force Architect investment
-- **13–20** Bear minibosses — force Striker scaling
-- **21–29** Mixed compositions, Beekeeper appearances
-- **30** Beekeeper boss raid (win condition)
-
-## Sample boons
-
-- *Forager Blessing* — foragers +20% honey, can't fight
-- *Brutal Stinger* — Strikers crit on first hit each wave
-- *Steel Comb* — hive HP +30%, but larvae per wave −1
-- *Swarm Tactics* — Strikers move 30% faster in groups of 3+
-- *Architect's Cunning* — first wall built each wave is free
-- *Royal Diet* — next 3 larvae mature instantly
-- *Smoke Resistance* — bees in smoke at half effect
-- *Hive Mind* — all roles get +1 effective rank for one wave
-
----
-
-## Idea shelf (for later, if it fits)
-
-These came up during brainstorm; not committed.
-
-- **Waggle dance mechanic** — tap-and-drag a path your strikers follow this wave (active player input beyond "place tower")
-- **Day/night cycle** — foragers only work in day, attackers stronger at night
-- **Pheromone trails** — Architects paint paths that buff bees walking on them
-- **Honey curing time** — raw nectar becomes honey over N seconds; spending too early loses efficiency
-- **Drones-as-resource** — males accumulate, only spendable on Princess to found a new hive (their gimmick)
-- **Weather modifiers** — rain slows foragers; wildflower bloom = forager bonus
-- **Color-blind palette swap** — swap honey/rust to a more accessible pair
-- **Cleaners role + Mite threat** — non-combat threat type as a v0.2 expansion
-
----
-
-## Architecture (Phase A)
+## Architecture
 
 ```
 /
-├── index.html              # canvas + DOM HUD overlay
+├── index.html              # canvas + DOM HUD + overlays (title, pickers, panel)
 ├── style.css               # mobile-first portrait, locked palette
 ├── src/
-│   ├── main.js             # entry, canvas resize/DPR, game loop, HUD wiring
-│   ├── data.js             # palette, hive/hornet/striker constants, wave script
-│   ├── game.js             # state, update step, spawning, swarm targeting, collisions
-│   └── render.js           # placeholder shapes + procedural wobble (breathing hive, wing-buzz, hit-stars, ink-puff death, top-edge wave-warning pulse)
+│   ├── main.js             # entry, game loop, HUD wiring, picker/panel UI
+│   ├── data.js             # palette, role/enemy/structure constants, modifier + boon pools, wave generator
+│   ├── game.js             # state, update step, role-effect helpers, getEff merger, attacker behaviors
+│   └── render.js           # canvas drawing — hive, attackers (hornet/spider/bear/beekeeper), swarm, FX, HUD chrome
 ├── .github/workflows/
-│   └── pages.yml           # auto-deploy on push to main
-└── readme.md               # this file
+│   └── pages.yml           # auto-deploy on push to main, with __VERSION__ cache-bust
+└── readme.md
 ```
-
-Will split `src/` into `game/`, `render/`, `ui/`, `data/` subdirs starting Phase B.
 
 ---
 
+## Idea shelf (deferred)
+
+- **Hidden synergies** — Sun-Soaked Comb (Architect+Forager → overflow → temp HP), Drone Frenzy (Nurse+Striker overflow → free kamikaze), Murder Hallway (Guard+Architect)
+- **Royal jelly** as a third currency, gating rank 4-5 unlocks
+- **Rank-4 unique abilities** — e.g. Striker rank 4: "Hive Mind Targeting" (one-target focus burst); Forager rank 4: "Nectar Routes" (kill-on-hit honey drops); etc.
+- **Meta-progression** — "Royal Memory" earned per run, spent only on **new options** (Hades-style sideways unlocks, never numerical buffs)
+- **More enemies** in reserve from Claude Design v2: Wasp Swarm, Ants, Bird, Dragonfly, Skunk, Rival Queen, Mites
+- **More structures** in reserve: Comb Tower, Watchtower, Honey Vat, Stinger Turret, Pheromone Marker, Brood Chamber, Wax Fence, Royal Chamber
+- **Audio**, **Heat-style replay modifiers**, **Daily seeded conditions**
+
 ## Claude Design
 
-- **v1 done** — three-style comparison delivered, Style B (Hand-Drawn / Wild Nest) selected
-- **v2 dispatched** — comprehensive expansion (full prompt embedded in the local plan file at `~/.claude/plans/okay-brainstorming-time-don-t-shimmying-dusk.md`): gameplay screens, 7 bee role variants, 10 enemies, 10 structures, animation suite, 11 UI screens, atmospheric variants
-
-Real assets land in **Phase E**. Until then, all sprites are procedural placeholders in the locked palette.
+- **v1 done** — three-style comparison, Style B (Hand-Drawn / Wild Nest) selected
+- **v2 done** — full expansion in `comb_at_me_bro-handoff/`: gameplay screens, 7 bee roles, 11 enemies, 10 structures, animation suite, 11 UI screens
+- Current build uses procedural canvas placeholders following the v2 visual specs (palette, shapes, layouts). Real PNG/SVG assets land in **Phase D**.
