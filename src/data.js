@@ -134,8 +134,9 @@ export const ROLES = {
   nurse: {
     name: 'Nurse',
     glyph: '🐝',
-    description: 'Produces extra larvae each wave clear.',
+    description: 'Raises bee population cap (+2/rank) and grants larvae per wave.',
     perRankLarvaePerWave: 1,
+    perRankPopCap: 2,
     costs: [25, 55, 95],
     maxRank: 3,
   },
@@ -150,7 +151,7 @@ export const ROLES = {
   striker: {
     name: 'Striker',
     glyph: '⚔',
-    description: 'Larger swarm volleys.',
+    description: 'Larger swarm volleys. Capped by bee population (Nurses).',
     perRankSwarmBonus: 2,
     costs: [30, 65, 110],
     maxRank: 3,
@@ -241,3 +242,94 @@ export const MODIFIERS = [
     },
   },
 ];
+
+// ============================================================
+// Boons — Hades-style mid-run pickups. Player gets 1-of-3 after
+// clearing certain waves (currently waves 3 and 6 of a 10-wave run).
+// Each boon stacks with modifiers and other boons via getEff().
+// ============================================================
+export const BOONS = [
+  {
+    id: 'brutal_stinger',
+    name: 'Brutal Stinger',
+    summary: 'Strikers deal +30% damage',
+    flavor: 'A blooded queen knows where to bury the first sting.',
+    archetype: 'aggro',
+    effects: { strikerDmgMul: 1.3 },
+  },
+  {
+    id: 'foragers_blessing',
+    name: "Forager's Blessing",
+    summary: '+60% honey/sec',
+    flavor: 'The pollen sings in golden tongues.',
+    archetype: 'greed',
+    effects: { foragerHoneyMul: 1.6 },
+  },
+  {
+    id: 'steel_resolve',
+    name: 'Steel Resolve',
+    summary: '+50 max HP · −1 larva per wave',
+    flavor: 'Hold the line. Lose what you must.',
+    archetype: 'turtle',
+    effects: { hiveStartHPBonus: 50, waveLarvaeBonus: -1 },
+  },
+  {
+    id: 'royal_diet',
+    name: 'Royal Diet',
+    summary: '+3 larvae per wave clear',
+    flavor: 'The Queen feasts. The brood grows.',
+    archetype: 'larvae-econ',
+    effects: { waveLarvaeBonus: 3 },
+  },
+  {
+    id: 'architects_cunning',
+    name: "Architect's Cunning",
+    summary: '+45 max HP · +120 honey storage',
+    flavor: 'Wax never lies. It only grows.',
+    archetype: 'turtle',
+    effects: { hiveStartHPBonus: 45, honeyCapBonus: 120 },
+  },
+  {
+    id: 'swarm_tactics',
+    name: 'Swarm Tactics',
+    summary: 'Strikers move 25% faster',
+    flavor: 'When they move as one, they cannot be cornered.',
+    archetype: 'aggro',
+    effects: { strikerSpeedMul: 1.25 },
+  },
+  {
+    id: 'bee_eaters_tactic',
+    name: "Bee-Eater's Tactic",
+    summary: 'Spiders take +70% striker damage',
+    flavor: 'Know your enemy. Bury its eyes.',
+    archetype: 'counter-spider',
+    effects: { spiderDmgMul: 1.7 },
+  },
+  {
+    id: 'hive_mind',
+    name: 'Hive Mind',
+    summary: 'All role costs −15%',
+    flavor: 'The colony moves as one mind.',
+    archetype: 'wide',
+    effects: { allRoleCostMul: 0.85 },
+  },
+  {
+    id: 'old_wax',
+    name: 'Old Wax',
+    summary: '+8 honey/wave (snowballs)',
+    flavor: 'Each clear leaves something behind. Pick it up.',
+    archetype: 'greed',
+    effects: { waveHoneyBonus: 8 },
+  },
+  {
+    id: 'eager_volley',
+    name: 'Eager Volley',
+    summary: 'Striker volleys fire 20% faster',
+    flavor: 'Less waiting. More stinging.',
+    archetype: 'aggro',
+    effects: { strikerCooldownMul: 0.8 },
+  },
+];
+
+// Waves that grant a boon pick (after the wave clears)
+export const BOON_WAVES = [3, 6];

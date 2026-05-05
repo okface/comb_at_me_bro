@@ -1,7 +1,11 @@
 // Phase B1 game logic — multi-wave runner with idle/active phases.
 // Single-file for now; will split into game/ submodules in Phase B2+.
 
-import { HIVE, HORNET, SPIDER, STRIKER, ECONOMY, ROLES, ROLE_ORDER, MODIFIERS, generateWave, TOTAL_WAVES } from './data.js?v=__VERSION__';
+import {
+  HIVE, HORNET, SPIDER, STRIKER, ECONOMY, ROLES, ROLE_ORDER,
+  MODIFIERS, BOONS, BOON_WAVES,
+  generateWave, TOTAL_WAVES,
+} from './data.js?v=__VERSION__';
 
 export function createState(width, height) {
   const roles = {};
@@ -35,7 +39,37 @@ export function createState(width, height) {
     roles,                  // { striker: {rank: 0}, ... }
     // run modifier (Hive Condition)
     modifier: null,         // populated by setModifier; null => baseline
+    // mid-run boons (collected via picker after BOON_WAVES)
+    boons: [],
+    pendingBoonPick: false,
   };
+}
+
+// ----------------------------------------------------------------------------
+// getEff(state) — merge modifier + boon effects into a single object.
+// Multiplicative keys (suffix "Mul") multiply; everything else adds.
+// roleCostMul is per-role nested {key: mul}.
+// ----------------------------------------------------------------------------
+export function getEff(state) {
+  const merged = {};
+  const sources = [];
+  if (state.modifier?.effects) sources.push(state.modifier.effects);
+  for (const b of (state.boons || [])) sources.push(b.effects);
+  for (const src of sources) {
+    for (const k in src) {
+      if (k === 'roleCostMul') {
+        merged[k] = merged[k] || {};
+        for (const r in src[k]) {
+          merged[k][r] = (merged[k][r] ?? 1) * src[k][r];
+        }
+      } else if (k.endsWith('Mul')) {
+        merged[k] = (merged[k] ?? 1) * src[k];
+      } else {
+        merged[k] = (merged[k] || 0) + src[k];
+      }
+    }
+  }
+  return merged;
 }
 
 // ----------------------------------------------------------------------------
@@ -60,13 +94,39 @@ export function setModifier(state, modId) {
 }
 
 function applyModifierStartingValues(state) {
-  const eff = state.modifier?.effects || {};
-  // hive HP bonus
+  // re-apply with combined effects (modifier alone at this point;
+  // boons aren't picked yet but the helper handles either case)
+  const eff = getEff(state);
   const hpBonus = eff.hiveStartHPBonus || 0;
   state.hive.maxHP = HIVE.startHP + hpBonus;
   state.hive.hp = state.hive.maxHP;
-  // honey cap multiplier
-  state.honeyCap = ECONOMY.honeyStorageCap * (eff.honeyCapMul ?? 1);
+  state.honeyCap = ECONOMY.honeyStorageCap * (eff.honeyCapMul ?? 1) + (eff.honeyCapBonus || 0);
+}
+
+// ----------------------------------------------------------------------------
+// Boons
+// ----------------------------------------------------------------------------
+export function pickBoonOptions(state, count = 3) {
+  // exclude boons the player already has so re-rolls don't repeat
+  const taken = new Set((state.boons || []).map(b => b.id));
+  const pool = BOONS.filter(b => !taken.has(b.id));
+  const out = [];
+  while (out.length < count && pool.length) {
+    const i = Math.floor(Math.random() * pool.length);
+    out.push(pool.splice(i, 1)[0]);
+  }
+  return out;
+}
+
+export function applyBoon(state, boonId) {
+  const boon = BOONS.find(b => b.id === boonId);
+  if (!boon) return false;
+  if (state.boons.some(b => b.id === boonId)) return false;
+  state.boons.push(boon);
+  state.pendingBoonPick = false;
+  // re-derive hive maxHP / honey cap (in case boon affects them)
+  applyRoleEffectsToHive(state);
+  return true;
 }
 
 export function startNextWave(state) {
@@ -109,6 +169,8 @@ export function restartRun(state) {
   state.larvae = ECONOMY.startLarvae;
   state.honeyCap = ECONOMY.honeyStorageCap;
   state.modifier = null;
+  state.boons = [];
+  state.pendingBoonPick = false;
   for (const k of ROLE_ORDER) state.roles[k].rank = 0;
 }
 
@@ -119,9 +181,8 @@ export function getRoleNextCost(state, key) {
   const role = ROLES[key];
   const cur = state.roles[key].rank;
   if (cur >= role.maxRank) return null;
-  let cost = role.costs[cur];
-  const eff = state.modifier?.effects || {};
-  // per-role multiplier first, then global
+  const cost = role.costs[cur];
+  const eff = getEff(state);
   const perRole = eff.roleCostMul?.[key] ?? 1;
   const allMul = eff.allRoleCostMul ?? 1;
   return Math.max(1, Math.round(cost * perRole * allMul));
@@ -144,11 +205,11 @@ export function investRole(state, key) {
 // Architects raise the hive's max HP and honey cap. Re-apply any time
 // architect rank changes (or on wave start) to keep these in sync.
 function applyRoleEffectsToHive(state) {
-  const eff = state.modifier?.effects || {};
+  const eff = getEff(state);
   const archRank = state.roles.architect.rank;
-  const hpBonusFromMod = eff.hiveStartHPBonus || 0;
-  const newMaxHP = HIVE.startHP + hpBonusFromMod + archRank * ROLES.architect.perRankHiveHP;
-  const baseCap = ECONOMY.honeyStorageCap * (eff.honeyCapMul ?? 1);
+  const hpBonusFromEff = eff.hiveStartHPBonus || 0;
+  const newMaxHP = HIVE.startHP + hpBonusFromEff + archRank * ROLES.architect.perRankHiveHP;
+  const baseCap = ECONOMY.honeyStorageCap * (eff.honeyCapMul ?? 1) + (eff.honeyCapBonus || 0);
   const newCap = baseCap + archRank * ROLES.architect.perRankStorage;
   const hpDelta = newMaxHP - state.hive.maxHP;
   state.hive.maxHP = newMaxHP;
@@ -158,17 +219,41 @@ function applyRoleEffectsToHive(state) {
 }
 
 export function getEffectiveSwarmCount(state) {
-  const eff = state.modifier?.effects || {};
+  const eff = getEff(state);
   const perRankBonus = ROLES.striker.perRankSwarmBonus + (eff.strikerPerRankBonus || 0);
-  return STRIKER.swarmCount + state.roles.striker.rank * perRankBonus;
+  const fromStriker = STRIKER.swarmCount + state.roles.striker.rank * perRankBonus;
+  // Population cap from Nurses — forces a wide build to scale offense.
+  // Cap base 7 lets Striker rank 1 work without Nurses; rank 2+ benefits
+  // strongly from Nurse investment. (rank 0 nurse → cap 7; +2 per nurse rank)
+  const popCap = 7 + state.roles.nurse.rank * 2;
+  return Math.min(fromStriker, popCap);
+}
+
+export function getStrikerPopCap(state) {
+  return 7 + state.roles.nurse.rank * 2;
+}
+
+export function getEffectiveStrikerSpeed(state) {
+  return STRIKER.speed * (getEff(state).strikerSpeedMul ?? 1);
+}
+
+export function getEffectiveStrikerCooldown(state) {
+  return STRIKER.cooldown * (getEff(state).strikerCooldownMul ?? 1);
+}
+
+export function getEffectiveStrikerDamage(state, target) {
+  const eff = getEff(state);
+  const base = STRIKER.damagePerHit * (eff.strikerDmgMul ?? 1);
+  if (target?.type === 'spider') return base * (eff.spiderDmgMul ?? 1);
+  return base;
 }
 
 export function getForagerHoneyPerSec(state) {
-  const eff = state.modifier?.effects || {};
+  const eff = getEff(state);
   const fromRank = state.roles.forager.rank * ROLES.forager.perRankHoneyPerSec;
-  const baseFromMod = eff.foragerBaseHoneyPerSec || 0;
+  const baseFromEff = eff.foragerBaseHoneyPerSec || 0;
   const mul = eff.foragerHoneyMul ?? 1;
-  return (fromRank + baseFromMod) * mul;
+  return (fromRank + baseFromEff) * mul;
 }
 
 export function getNurseLarvaeBonus(state) {
@@ -279,7 +364,7 @@ export function updateState(state, dt) {
     const target = pickClosestLiveAttacker(state);
     if (target) {
       launchSwarm(state, target);
-      state.strikerCooldown = STRIKER.cooldown;
+      state.strikerCooldown = getEffectiveStrikerCooldown(state);
     } else {
       state.strikerCooldown = 0.4;
     }
@@ -304,11 +389,11 @@ export function updateState(state, dt) {
     const closeFactor = Math.min(1, Math.max(0, (d - STRIKER.hitRadius) / 110));
     const wobbleV = Math.cos(state.elapsed * s.wobbleFreq + s.phase)
                   * s.wobbleAmp * closeFactor;
-    const baseSpeed = STRIKER.speed * s.speedMul;
+    const baseSpeed = getEffectiveStrikerSpeed(state) * s.speedMul;
     s.x += (dirX * baseSpeed + perpX * wobbleV) * dt;
     s.y += (dirY * baseSpeed + perpY * wobbleV) * dt;
     if (d < STRIKER.hitRadius) {
-      s.target.hp -= STRIKER.damagePerHit;
+      s.target.hp -= getEffectiveStrikerDamage(state, s.target);
       s.alive = false;
       state.fx.push({ kind: 'hit', x: s.target.x, y: s.target.y, t: 0, life: 0.32 });
       if (s.target.hp <= 0 && s.target.deathT == null) {
@@ -328,10 +413,14 @@ export function updateState(state, dt) {
   const allSpawned = state.spawnIdx >= state.currentWave.spawns.length;
   const liveCount = state.attackers.filter(a => a.deathT == null).length;
   if (allSpawned && liveCount === 0) {
-    // wave-clear reward (modifier-aware)
-    const eff = state.modifier?.effects || {};
-    const honeyReward = Math.round(ECONOMY.waveClearHoney * (eff.waveHoneyMul ?? 1));
-    const larvaeReward = ECONOMY.waveClearLarvae + getNurseLarvaeBonus(state) + (eff.waveLarvaeBonus || 0);
+    // wave-clear reward (modifier + boons)
+    const eff = getEff(state);
+    const honeyReward = Math.max(0, Math.round(
+      ECONOMY.waveClearHoney * (eff.waveHoneyMul ?? 1) + (eff.waveHoneyBonus || 0)
+    ));
+    const larvaeReward = Math.max(0,
+      ECONOMY.waveClearLarvae + getNurseLarvaeBonus(state) + (eff.waveLarvaeBonus || 0)
+    );
     state.honey = Math.min(state.honeyCap, state.honey + honeyReward);
     state.larvae += larvaeReward;
     state.fx.push({
@@ -344,6 +433,10 @@ export function updateState(state, dt) {
     } else {
       state.phase = 'idle';
       showBanner(state, `WAVE ${state.wave} CLEARED`, 2.2, 'wave-clear');
+      // mark a boon pick if this wave was on the boon-trigger list
+      if (BOON_WAVES.includes(state.wave)) {
+        state.pendingBoonPick = true;
+      }
     }
   }
 }

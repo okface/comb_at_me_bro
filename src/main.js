@@ -5,6 +5,7 @@ import {
   startNextWave, restartRun,
   investRole, getRoleNextCost,
   setModifier, pickModifierOptions,
+  applyBoon, pickBoonOptions,
 } from './game.js?v=__VERSION__';
 import { render } from './render.js?v=__VERSION__';
 import { ROLES, ROLE_ORDER } from './data.js?v=__VERSION__';
@@ -38,6 +39,9 @@ const panelHoney = document.getElementById('panel-honey');
 const modifierPicker = document.getElementById('modifier-picker');
 const modifierOptions = document.getElementById('modifier-options');
 const modifierTag = document.getElementById('modifier-tag');
+const boonPicker = document.getElementById('boon-picker');
+const boonOptions = document.getElementById('boon-options');
+let boonPickerScheduled = false;
 
 let state = null;
 let dpr = 1;
@@ -116,6 +120,14 @@ function syncHUD(force = false) {
       hud.ready.classList.remove('hidden');
       rolesBtn.classList.remove('hidden');
       hideOverlay();
+      // pending boon pick from a recently-cleared trigger wave?
+      if (state.pendingBoonPick && !boonPickerScheduled && boonPicker.classList.contains('hidden')) {
+        boonPickerScheduled = true;
+        setTimeout(() => {
+          boonPickerScheduled = false;
+          if (state.pendingBoonPick) showBoonPicker();
+        }, 1100);
+      }
       break;
     case 'active':
       hud.status.textContent = `wave ${state.wave} in progress`;
@@ -289,6 +301,36 @@ function showModifierPicker() {
     modifierOptions.appendChild(card);
   }
   modifierPicker.classList.remove('hidden');
+}
+
+function showBoonPicker() {
+  boonOptions.innerHTML = '';
+  const opts = pickBoonOptions(state, 3);
+  if (opts.length === 0) {
+    // No boons left to offer (somehow). Skip and continue.
+    state.pendingBoonPick = false;
+    syncHUD(true);
+    return;
+  }
+  for (const b of opts) {
+    const card = document.createElement('div');
+    card.className = 'modifier-card boon-card';
+    card.dataset.boonId = b.id;
+    card.innerHTML = `
+      <h3 class="mod-name">${b.name}</h3>
+      <p class="mod-summary">${b.summary}</p>
+      <p class="mod-flavor">"${b.flavor}"</p>
+      <p class="mod-pushes">${b.archetype}</p>
+    `;
+    card.addEventListener('click', () => {
+      if (applyBoon(state, b.id)) {
+        boonPicker.classList.add('hidden');
+        syncHUD(true);
+      }
+    });
+    boonOptions.appendChild(card);
+  }
+  boonPicker.classList.remove('hidden');
 }
 
 rolesBtn.addEventListener('click', showRolesPanel);
