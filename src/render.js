@@ -22,9 +22,39 @@ export function render(ctx, state) {
   drawAttackers(ctx, state);
   drawHive(ctx, state);
   drawSwarmParticles(ctx, state);
+  if (state.priorityTarget && state.priorityTarget.deathT == null) {
+    drawPriorityReticle(ctx, state.priorityTarget, state.elapsed);
+  }
   drawFx(ctx, state);
   drawHiveHP(ctx, state.hive);
   drawBanner(ctx, state);
+}
+
+// Reticle on tap-prioritized target — dashed ring + 4 corner ticks
+function drawPriorityReticle(ctx, target, elapsed) {
+  ctx.save();
+  ctx.translate(target.x, target.y);
+  // gentle pulse
+  const pulse = 1 + 0.1 * Math.sin(elapsed * 6);
+  ctx.strokeStyle = PALETTE.redInk;
+  ctx.lineWidth = 1.6;
+  ctx.lineCap = 'round';
+  // outer dashed circle
+  ctx.setLineDash([3, 4]);
+  ctx.beginPath();
+  ctx.arc(0, 0, 22 * pulse, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  // 4 corner ticks
+  const r1 = 18 * pulse, r2 = 27 * pulse;
+  for (let i = 0; i < 4; i++) {
+    const a = (Math.PI / 2) * i + Math.PI / 4;
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(a) * r1, Math.sin(a) * r1);
+    ctx.lineTo(Math.cos(a) * r2, Math.sin(a) * r2);
+    ctx.stroke();
+  }
+  ctx.restore();
 }
 
 // ============================================================================
@@ -664,7 +694,21 @@ function drawFx(ctx, state) {
     else if (f.kind === 'puff')        drawFxPuff(ctx, f, k);
     else if (f.kind === 'spawn-warn')  drawFxSpawnWarn(ctx, f, k, state);
     else if (f.kind === 'reward')      drawFxReward(ctx, f, k);
+    else if (f.kind === 'tap-ripple')  drawFxTapRipple(ctx, f, k);
   }
+}
+
+function drawFxTapRipple(ctx, f, k) {
+  const r = 8 + k * 30;
+  ctx.save();
+  ctx.translate(f.x, f.y);
+  ctx.globalAlpha = 1 - k;
+  ctx.strokeStyle = f.hit ? PALETTE.redInk : PALETTE.honey;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
 }
 
 // Floating reward text: rises ~50px while fading in then out (cb-rise)

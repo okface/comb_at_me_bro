@@ -6,6 +6,7 @@ import {
   investRole, getRoleNextCost,
   setModifier, pickModifierOptions,
   applyBoon, pickBoonOptions,
+  setPriorityTarget,
 } from './game.js?v=__VERSION__';
 import { render } from './render.js?v=__VERSION__';
 import { ROLES, ROLE_ORDER } from './data.js?v=__VERSION__';
@@ -347,6 +348,35 @@ overlayBtn.addEventListener('click', () => {
 
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden) last = performance.now();
+});
+
+// ============================================================================
+// Tap-to-prioritize: tapping the canvas during combat focuses your strikers
+// on the nearest attacker (or clears if you tap empty space).
+// ============================================================================
+function handleCanvasTap(clientX, clientY) {
+  if (!state || state.phase !== 'active') return;
+  const rect = canvas.getBoundingClientRect();
+  const cx = (clientX - rect.left) * (canvas.width / rect.width) / dpr;
+  const cy = (clientY - rect.top)  * (canvas.height / rect.height) / dpr;
+  const hit = setPriorityTarget(state, cx, cy);
+  // visual feedback regardless of hit/miss
+  state.fx.push({
+    kind: 'tap-ripple', x: cx, y: cy,
+    t: 0, life: hit ? 0.6 : 0.35,
+    hit,
+  });
+}
+
+canvas.addEventListener('touchstart', (e) => {
+  if (e.touches.length === 0) return;
+  e.preventDefault(); // suppress synthetic click + zoom
+  const t = e.touches[0];
+  handleCanvasTap(t.clientX, t.clientY);
+}, { passive: false });
+
+canvas.addEventListener('click', (e) => {
+  handleCanvasTap(e.clientX, e.clientY);
 });
 
 init();

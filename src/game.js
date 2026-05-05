@@ -54,7 +54,22 @@ export function createState(width, height) {
     // mid-run boons (collected via picker after BOON_WAVES)
     boons: [],
     pendingBoonPick: false,
+    // tap-to-prioritize: strikers home this attacker until it dies
+    priorityTarget: null,
   };
+}
+
+// Tap an attacker to mark it as priority — strikers will focus it.
+// Returns true if a target within range was found.
+export function setPriorityTarget(state, x, y, tapRadius = 60) {
+  let best = null, bestD = tapRadius;
+  for (const a of state.attackers) {
+    if (a.deathT != null) continue;
+    const d = Math.hypot(a.x - x, a.y - y);
+    if (d < bestD) { bestD = d; best = a; }
+  }
+  state.priorityTarget = best;
+  return best !== null;
 }
 
 // ----------------------------------------------------------------------------
@@ -183,6 +198,7 @@ export function restartRun(state) {
   state.modifier = null;
   state.boons = [];
   state.pendingBoonPick = false;
+  state.priorityTarget = null;
   for (const k of ROLE_ORDER) state.roles[k].rank = 0;
 }
 
@@ -551,6 +567,14 @@ function spawnBeekeeper(state) {
 }
 
 function pickClosestLiveAttacker(state, fromX, fromY) {
+  // Priority target overrides default homing (active player input).
+  if (state.priorityTarget && state.priorityTarget.deathT == null) {
+    return state.priorityTarget;
+  }
+  // dead/cleared priority target — clear it so we don't keep checking
+  if (state.priorityTarget && state.priorityTarget.deathT != null) {
+    state.priorityTarget = null;
+  }
   const x = fromX ?? state.hive.x;
   const y = fromY ?? state.hive.y;
   let best = null;
