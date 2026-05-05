@@ -1,6 +1,6 @@
-// Comb At Me Bro — Phase A entry. Wires canvas + loop + HUD + restart.
+// Comb At Me Bro — Phase B1 entry. Wires canvas + loop + HUD + Ready button.
 
-import { createState, resizeState, updateState } from './game.js';
+import { createState, resizeState, updateState, startNextWave, restartRun } from './game.js';
 import { render } from './render.js';
 
 const canvas = document.getElementById('game');
@@ -9,6 +9,7 @@ const hud = {
   wave: document.getElementById('wave-label'),
   hp: document.getElementById('hp-label'),
   status: document.getElementById('status'),
+  ready: document.getElementById('ready-btn'),
 };
 const overlay = document.getElementById('overlay');
 const overlayTitle = document.getElementById('overlay-title');
@@ -17,9 +18,9 @@ const overlayBtn = document.getElementById('overlay-btn');
 
 let state = null;
 let dpr = 1;
+let lastPhase = null;
 
 function fitCanvas() {
-  // logical size = CSS pixel size of the canvas; backing store scaled by DPR.
   dpr = Math.min(window.devicePixelRatio || 1, 2);
   const w = canvas.clientWidth;
   const h = canvas.clientHeight;
@@ -30,20 +31,64 @@ function fitCanvas() {
   return { w, h };
 }
 
-function start() {
-  hideOverlay();
+function init() {
   const { w, h } = fitCanvas();
   state = createState(w, h);
-  hud.status.textContent = 'PHASE A · defend the hive';
+  hideOverlay();
+  syncHUD(true);
 }
 
-function tickHUD() {
+function syncHUD(force = false) {
+  if (!state) return;
+  if (!force && state.phase === lastPhase) {
+    // still update dynamic numbers
+    hud.hp.textContent = `HP ${Math.ceil(state.hive.hp)}`;
+    hud.wave.textContent = state.wave === 0
+      ? `WAVE 0 / ${state.totalWaves}`
+      : `WAVE ${state.wave} / ${state.totalWaves}`;
+    return;
+  }
+  lastPhase = state.phase;
+
   hud.hp.textContent = `HP ${Math.ceil(state.hive.hp)}`;
-  hud.wave.textContent = `WAVE 1 / 1`;
-  if (state.status === 'lost') {
-    showOverlay('The hive has fallen', 'A hornet broke through. Try again?', 'Restart');
-  } else if (state.status === 'won') {
-    showOverlay('Wave cleared', 'Phase A skeleton works. More to come.', 'Play again');
+  hud.wave.textContent = state.wave === 0
+    ? `WAVE 0 / ${state.totalWaves}`
+    : `WAVE ${state.wave} / ${state.totalWaves}`;
+
+  switch (state.phase) {
+    case 'idle':
+      if (state.wave === 0) {
+        hud.status.textContent = 'tap READY to start';
+      } else {
+        hud.status.textContent = `wave ${state.wave} cleared · next?`;
+      }
+      hud.ready.classList.remove('hidden');
+      hideOverlay();
+      break;
+    case 'active':
+      hud.status.textContent = `wave ${state.wave} in progress`;
+      hud.ready.classList.add('hidden');
+      hideOverlay();
+      break;
+    case 'won':
+      hud.status.textContent = 'queen victorious';
+      hud.ready.classList.add('hidden');
+      // small delay so the in-canvas banner is visible first
+      setTimeout(() => showOverlay(
+        'Queen Victorious',
+        `You held the hive across ${state.totalWaves} waves.`,
+        'New Run'
+      ), 1200);
+      break;
+    case 'lost':
+      hud.status.textContent = 'the hive has fallen';
+      hud.ready.classList.add('hidden');
+      setTimeout(() => showOverlay(
+        'The Hive Has Fallen',
+        `You held to wave ${state.wave} of ${state.totalWaves}.`,
+        'Try Again'
+      ), 1200);
+      break;
   }
 }
 
@@ -55,29 +100,35 @@ function showOverlay(title, sub, btn) {
   overlay.classList.remove('hidden');
 }
 
-function hideOverlay() {
-  overlay.classList.add('hidden');
-}
+function hideOverlay() { overlay.classList.add('hidden'); }
 
 let last = performance.now();
 function frame(now) {
-  const dt = Math.min(0.05, (now - last) / 1000); // clamp big jumps (tab switch)
+  const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
   if (state) {
     updateState(state, dt);
     render(ctx, state);
-    tickHUD();
+    syncHUD();
   }
   requestAnimationFrame(frame);
 }
 
 window.addEventListener('resize', () => fitCanvas());
-overlayBtn.addEventListener('click', start);
 
-// Visibility pause: skip dt accumulation while hidden (prevents big jumps).
+hud.ready.addEventListener('click', () => {
+  startNextWave(state);
+  syncHUD(true);
+});
+
+overlayBtn.addEventListener('click', () => {
+  restartRun(state);
+  syncHUD(true);
+});
+
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden) last = performance.now();
 });
 
-start();
+init();
 requestAnimationFrame(frame);

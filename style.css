@@ -84,6 +84,30 @@ html, body {
   opacity: 0.85;
 }
 
+.primary-btn {
+  pointer-events: auto;
+  background: var(--ink);
+  color: var(--paper);
+  border: 2px solid var(--ink);
+  padding: 12px 22px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  cursor: pointer;
+  box-shadow: 0 3px 0 rgba(58, 40, 24, 0.35);
+  border-radius: 2px;
+  min-height: 44px;
+  min-width: 96px;
+}
+
+.primary-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 rgba(58, 40, 24, 0.35);
+}
+
+.primary-btn.hidden { display: none; }
+
 #overlay {
   position: absolute;
   inset: 0;

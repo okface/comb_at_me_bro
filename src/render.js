@@ -37,7 +37,67 @@ export function render(ctx, state) {
   // hive HP bar (above hive, paper card)
   drawHiveHP(ctx, hive);
 
-  // status banner during loss/win — bigger overlay handled in DOM
+  // wave banner — sweeps in, holds, fades out
+  drawBanner(ctx, state);
+}
+
+function drawBanner(ctx, state) {
+  if (!state.banner) return;
+  const { text, kind, t, life } = state.banner;
+  const k = t / life;
+
+  // ease in, hold, ease out
+  let alpha = 1;
+  let slideX = 0;
+  if (k < 0.18) {
+    const e = k / 0.18;
+    alpha = e;
+    slideX = -160 * (1 - e);
+  } else if (k > 0.82) {
+    const e = (1 - k) / 0.18;
+    alpha = e;
+    slideX = 120 * (1 - e);
+  }
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.translate(slideX, 0);
+
+  const cx = state.width / 2;
+  const cy = state.height * 0.36;
+
+  ctx.font = '700 22px Georgia, "Fraunces", serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const m = ctx.measureText(text);
+  const padX = 22, padY = 14;
+  const w = m.width + padX * 2;
+  const h = 22 + padY * 2;
+
+  const bg =
+    kind === 'lose' ? PALETTE.rust :
+    kind === 'win'  ? PALETTE.honey :
+    kind === 'wave-clear' ? PALETTE.honeyHi :
+    PALETTE.paper;
+  const fg =
+    kind === 'lose' ? PALETTE.paper :
+    PALETTE.ink;
+
+  // soft drop shadow
+  ctx.fillStyle = 'rgba(58, 40, 24, 0.22)';
+  ctx.fillRect(cx - w/2 + 3, cy - h/2 + 4, w, h);
+
+  // paper card
+  ctx.fillStyle = bg;
+  ctx.fillRect(cx - w/2, cy - h/2, w, h);
+  ctx.strokeStyle = PALETTE.ink;
+  ctx.lineWidth = 2;
+  ctx.strokeRect(cx - w/2, cy - h/2, w, h);
+
+  ctx.fillStyle = fg;
+  ctx.fillText(text, cx, cy + 1);
+
+  ctx.restore();
 }
 
 function drawGrassTufts(ctx, w, h) {

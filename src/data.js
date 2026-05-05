@@ -42,17 +42,22 @@ export const STRIKER = {
   spreadRadius: 18,
 };
 
-// Phase A wave: 8 hornets, staggered. Survive to win.
-export const WAVE_A = {
-  duration: 30, // seconds; informational
-  spawns: [
-    { type: 'hornet', t: 0.5 },
-    { type: 'hornet', t: 3.5 },
-    { type: 'hornet', t: 6.0 },
-    { type: 'hornet', t: 9.0 },
-    { type: 'hornet', t: 12.0 },
-    { type: 'hornet', t: 15.5 },
-    { type: 'hornet', t: 19.0 },
-    { type: 'hornet', t: 23.0 },
-  ],
-};
+// Phase B1: procedural wave generator. Replaces hardcoded WAVE_A.
+// Wave n gets (3 + 2n) hornets over (18 + 3n) seconds.
+//   1 →  5 hornets in 21s    2 →  7 hornets in 24s
+//   3 →  9 hornets in 27s    4 → 11 hornets in 30s
+//   5 → 13 hornets in 33s
+// Spacing is deterministic with a small alternating jitter.
+export function generateWave(n) {
+  const count = 3 + n * 2;
+  const duration = 18 + n * 3;
+  const step = duration / count;
+  const spawns = [];
+  for (let i = 0; i < count; i++) {
+    const jitter = i % 2 === 0 ? 0 : 0.7;
+    spawns.push({ type: 'hornet', t: 1 + step * i + jitter });
+  }
+  return { spawns, duration };
+}
+
+export const TOTAL_WAVES = 5; // B1 ships 5; full 30 lands in Phase C.

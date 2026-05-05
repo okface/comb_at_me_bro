@@ -1,7 +1,7 @@
-// Phase A game logic — state, update step, spawning, collisions.
-// Single-file for now; will split into game/ submodules in Phase B.
+// Phase B1 game logic — multi-wave runner with idle/active phases.
+// Single-file for now; will split into game/ submodules in Phase B2+.
 
-import { HIVE, HORNET, STRIKER, WAVE_A } from './data.js';
+import { HIVE, HORNET, STRIKER, generateWave, TOTAL_WAVES } from './data.js';
 
 export function createState(width, height) {
   const hive = {
@@ -15,14 +15,49 @@ export function createState(width, height) {
   return {
     width, height,
     hive,
-    attackers: [],     // { x, y, hp, type, deathT }
-    swarms: [],        // { x, y, vx, vy, target, alive }
-    fx: [],            // visual-only effects { kind, x, y, t, life }
+    attackers: [],
+    swarms: [],
+    fx: [],
     spawnIdx: 0,
     elapsed: 0,
     strikerCooldown: 0,
-    status: 'running', // running | won | lost
+    phase: 'idle',         // 'idle' | 'active' | 'won' | 'lost'
+    wave: 0,                // 0 before wave 1; increments on startNextWave
+    totalWaves: TOTAL_WAVES,
+    currentWave: null,      // populated by startNextWave
+    banner: null,           // { text, kind, t, life }
   };
+}
+
+export function startNextWave(state) {
+  if (state.phase !== 'idle') return;
+  state.wave += 1;
+  state.currentWave = generateWave(state.wave);
+  state.spawnIdx = 0;
+  state.elapsed = 0;
+  state.strikerCooldown = 0;
+  state.attackers = [];
+  state.swarms = [];
+  state.phase = 'active';
+  showBanner(state, `WAVE ${state.wave} / ${state.totalWaves}`, 1.8, 'wave-start');
+}
+
+export function restartRun(state) {
+  state.hive.hp = HIVE.startHP;
+  state.attackers = [];
+  state.swarms = [];
+  state.fx = [];
+  state.spawnIdx = 0;
+  state.elapsed = 0;
+  state.strikerCooldown = 0;
+  state.phase = 'idle';
+  state.wave = 0;
+  state.currentWave = null;
+  state.banner = null;
+}
+
+function showBanner(state, text, life, kind = 'wave-start') {
+  state.banner = { text, kind, t: 0, life };
 }
 
 export function resizeState(state, width, height) {
@@ -33,16 +68,29 @@ export function resizeState(state, width, height) {
 }
 
 export function updateState(state, dt) {
-  if (state.status !== 'running') return;
-  state.elapsed += dt;
   state.hive.breathPhase += dt;
 
-  // --- spawn from wave script
+  // banner ticks regardless of phase
+  if (state.banner) {
+    state.banner.t += dt;
+    if (state.banner.t >= state.banner.life) state.banner = null;
+  }
+
+  if (state.phase !== 'active') {
+    // still let attackers' death timers and swarm fx finish out cleanly
+    advanceLeftoverFx(state, dt);
+    return;
+  }
+
+  state.elapsed += dt;
+
+  // --- spawn from current wave script
+  const wave = state.currentWave;
   while (
-    state.spawnIdx < WAVE_A.spawns.length &&
-    WAVE_A.spawns[state.spawnIdx].t <= state.elapsed
+    wave && state.spawnIdx < wave.spawns.length &&
+    wave.spawns[state.spawnIdx].t <= state.elapsed
   ) {
-    const s = WAVE_A.spawns[state.spawnIdx++];
+    const s = wave.spawns[state.spawnIdx++];
     if (s.type === 'hornet') spawnHornet(state);
   }
 
@@ -56,11 +104,12 @@ export function updateState(state, dt) {
       a.x += (dx / d) * HORNET.speed * dt;
       a.y += (dy / d) * HORNET.speed * dt;
     } else {
-      // touching the hive — apply DoT
       state.hive.hp -= HIVE.contactDPS * dt;
       if (state.hive.hp <= 0) {
         state.hive.hp = 0;
-        state.status = 'lost';
+        state.phase = 'lost';
+        showBanner(state, 'HIVE FALLEN', 4, 'lose');
+        return;
       }
     }
   }
@@ -73,16 +122,14 @@ export function updateState(state, dt) {
       launchSwarm(state, target);
       state.strikerCooldown = STRIKER.cooldown;
     } else {
-      state.strikerCooldown = 0.4; // re-check often when idle
+      state.strikerCooldown = 0.4;
     }
   }
 
-  // --- move swarm particles toward their target
+  // --- swarm particles fly to target
   for (const s of state.swarms) {
     if (!s.alive) continue;
-    const t = s.target;
-    if (!t || t.deathT != null) {
-      // retarget if original died mid-flight
+    if (!s.target || s.target.deathT != null) {
       const next = pickClosestLiveAttacker(state, s.x, s.y);
       if (next) s.target = next;
       else { s.alive = false; continue; }
@@ -93,7 +140,6 @@ export function updateState(state, dt) {
     s.x += (dx / d) * STRIKER.speed * dt;
     s.y += (dy / d) * STRIKER.speed * dt;
     if (d < STRIKER.hitRadius) {
-      // hit
       s.target.hp -= STRIKER.damagePerHit;
       s.alive = false;
       state.fx.push({ kind: 'hit', x: s.target.x, y: s.target.y, t: 0, life: 0.32 });
@@ -110,16 +156,31 @@ export function updateState(state, dt) {
   for (const f of state.fx) f.t += dt;
   state.fx = state.fx.filter(f => f.t < f.life);
 
-  // --- win condition: all spawns done and no live attackers
-  const allSpawned = state.spawnIdx >= WAVE_A.spawns.length;
+  // --- wave clear?
+  const allSpawned = state.spawnIdx >= state.currentWave.spawns.length;
   const liveCount = state.attackers.filter(a => a.deathT == null).length;
-  if (allSpawned && liveCount === 0 && state.status === 'running') {
-    state.status = 'won';
+  if (allSpawned && liveCount === 0) {
+    if (state.wave >= state.totalWaves) {
+      state.phase = 'won';
+      showBanner(state, 'QUEEN VICTORIOUS', 5, 'win');
+    } else {
+      state.phase = 'idle';
+      showBanner(state, `WAVE ${state.wave} CLEARED`, 2.2, 'wave-clear');
+    }
   }
 }
 
+function advanceLeftoverFx(state, dt) {
+  // animations during idle/won/lost: keep death curls and fx finishing.
+  for (const a of state.attackers) {
+    if (a.deathT != null) a.deathT += dt;
+  }
+  state.attackers = state.attackers.filter(a => a.deathT == null || a.deathT < 0.6);
+  for (const f of state.fx) f.t += dt;
+  state.fx = state.fx.filter(f => f.t < f.life);
+}
+
 function spawnHornet(state) {
-  // spawn somewhere along the top edge, varied horizontally
   const margin = 40;
   const x = margin + Math.random() * (state.width - margin * 2);
   state.attackers.push({
@@ -145,7 +206,6 @@ function pickClosestLiveAttacker(state, fromX, fromY) {
 }
 
 function launchSwarm(state, target) {
-  // spawn STRIKER.swarmCount particles in a small disc near the hive
   const cx = state.hive.x;
   const cy = state.hive.y - state.hive.radius * 0.3;
   for (let i = 0; i < STRIKER.swarmCount; i++) {
