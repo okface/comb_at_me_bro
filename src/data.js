@@ -2,18 +2,33 @@
 // Hardcoded constants for the skeleton. Will split into data/ subdir
 // (roles, attackers, waves, boons) starting Phase B.
 
+// Full palette from Claude Design v2 (cb/style.jsx). Locked.
 export const PALETTE = {
-  paper:     '#f5ebd6',
-  paper2:    '#e6dcc4',
-  ink:       '#3a2818',
-  inkSoft:   '#6b513a',
-  sage:      '#c8d89a',
-  sageDark:  '#b5c879',
-  honey:     '#f2c24a',
-  honeyDeep: '#b66b1e',
-  honeyHi:   '#f3cb7e',
-  rust:      '#8a3a1c',
-  rustDark:  '#3a1a0e',
+  paper:        '#F5EBD6',
+  paperDark:    '#E8DCBF',
+  paperShade:   '#D4C5A0',
+  sage:         '#C8D89A',
+  sageDeep:     '#A8BE7A',
+  sageDark:     '#7E9658',
+  honey:        '#F2C24A',
+  honeyDeep:    '#E8A24A',
+  honeyLight:   '#F7DDA0',
+  honeyDark:    '#B66B1E',
+  rust:         '#8A3A1C',
+  rustDark:     '#5E2410',
+  ink:          '#3A2818',
+  inkSoft:      '#6B5A45',
+  white:        '#FBF6E8',
+  redInk:       '#A8351E',
+  jelly:        '#E8B8E0',
+  jellyDeep:    '#9E5BA0',
+  smokeGrey:    '#A8A097',
+  spiderPurple: '#5B3D5E',
+  webWhite:     '#EFE8D8',
+  // legacy aliases used by older code
+  paper2:       '#E8DCBF',
+  honeyHi:      '#F7DDA0',
+  rustDarkAlt:  '#3a1a0e',
 };
 
 export const HIVE = {

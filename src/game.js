@@ -189,7 +189,11 @@ function spawnHornet(state) {
     y: -20,
     hp: HORNET.hp,
     deathT: null,
+    flutterPhase: Math.random() * Math.PI * 2, // wing buzz offset
   });
+  // brief spawn warning chevron at the top edge instead of a constant
+  // background pulse — addresses the "flashing dark gradient" complaint.
+  state.fx.push({ kind: 'spawn-warn', x, y: 18, t: 0, life: 0.9 });
 }
 
 function pickClosestLiveAttacker(state, fromX, fromY) {
