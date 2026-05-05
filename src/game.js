@@ -1,7 +1,7 @@
 // Phase B1 game logic — multi-wave runner with idle/active phases.
 // Single-file for now; will split into game/ submodules in Phase B2+.
 
-import { HIVE, HORNET, STRIKER, ECONOMY, ROLES, ROLE_ORDER, MODIFIERS, generateWave, TOTAL_WAVES } from './data.js?v=__VERSION__';
+import { HIVE, HORNET, SPIDER, STRIKER, ECONOMY, ROLES, ROLE_ORDER, MODIFIERS, generateWave, TOTAL_WAVES } from './data.js?v=__VERSION__';
 
 export function createState(width, height) {
   const roles = {};
@@ -221,20 +221,21 @@ export function updateState(state, dt) {
   ) {
     const s = wave.spawns[state.spawnIdx++];
     if (s.type === 'hornet') spawnHornet(state);
+    else if (s.type === 'spider') spawnSpider(state);
   }
 
   // --- attackers home toward hive; guards damage anything in contact
   const guardDPS = getGuardContactDPS(state);
   for (const a of state.attackers) {
     if (a.deathT != null) { a.deathT += dt; continue; }
+    const cfg = a.type === 'spider' ? SPIDER : HORNET;
     const dx = state.hive.x - a.x;
     const dy = state.hive.y - a.y;
     const d = Math.hypot(dx, dy) || 1;
-    if (d > HORNET.contactRange) {
-      a.x += (dx / d) * HORNET.speed * dt;
-      a.y += (dy / d) * HORNET.speed * dt;
+    if (d > cfg.contactRange) {
+      a.x += (dx / d) * cfg.speed * dt;
+      a.y += (dy / d) * cfg.speed * dt;
     } else {
-      // attacker reached the hive — both sides take damage
       state.hive.hp -= HIVE.contactDPS * dt;
       if (guardDPS > 0) {
         a.hp -= guardDPS * dt;
@@ -249,6 +250,26 @@ export function updateState(state, dt) {
         showBanner(state, 'HIVE FALLEN', 4, 'lose');
         return;
       }
+    }
+  }
+
+  // --- spider bites: each spider eats striker particles in close range
+  for (const a of state.attackers) {
+    if (a.type !== 'spider' || a.deathT != null) continue;
+    a.biteCD = (a.biteCD ?? 0) - dt;
+    if (a.biteCD > 0) continue;
+    let target = null, bestD = SPIDER.biteRange;
+    for (const s of state.swarms) {
+      if (!s.alive) continue;
+      const sd = Math.hypot(s.x - a.x, s.y - a.y);
+      if (sd < bestD) { bestD = sd; target = s; }
+    }
+    if (target) {
+      target.alive = false;
+      state.fx.push({ kind: 'puff', x: target.x, y: target.y, t: 0, life: 0.4 });
+      a.biteCD = SPIDER.biteCooldown;
+    } else {
+      a.biteCD = 0.18; // re-scan soon
     }
   }
 
@@ -347,7 +368,22 @@ function spawnHornet(state) {
     y: -20,
     hp: HORNET.hp + hpBonus,
     deathT: null,
-    flutterPhase: Math.random() * Math.PI * 2, // wing buzz offset
+    flutterPhase: Math.random() * Math.PI * 2,
+  });
+  state.fx.push({ kind: 'spawn-warn', x, y: 18, t: 0, life: 0.9 });
+}
+
+function spawnSpider(state) {
+  const margin = 50;
+  const x = margin + Math.random() * (state.width - margin * 2);
+  state.attackers.push({
+    type: 'spider',
+    x,
+    y: -22,
+    hp: SPIDER.hp,
+    deathT: null,
+    legPhase: Math.random() * Math.PI * 2,
+    biteCD: SPIDER.biteCooldown * 0.5,
   });
   state.fx.push({ kind: 'spawn-warn', x, y: 18, t: 0, life: 0.9 });
 }

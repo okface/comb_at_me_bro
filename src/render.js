@@ -91,7 +91,8 @@ function drawDefensivePerimeter(ctx, state) {
 // ============================================================================
 function drawAttackers(ctx, state) {
   for (const a of state.attackers) {
-    if (a.type === 'hornet') drawHornet(ctx, a, state.elapsed);
+    if (a.type === 'hornet')      drawHornet(ctx, a, state.elapsed);
+    else if (a.type === 'spider') drawSpider(ctx, a, state.elapsed);
   }
 }
 
@@ -162,6 +163,88 @@ function drawHornet(ctx, a, elapsed) {
   ctx.lineTo(0, -11);
   ctx.closePath();
   ctx.fill();
+
+  ctx.restore();
+}
+
+// Spider — port of cb/enemies.jsx: purple oval body, 8 scuttling legs,
+// 4 red eyes, gentle scuttle wobble.
+function drawSpider(ctx, a, elapsed) {
+  ctx.save();
+  ctx.translate(a.x, a.y);
+
+  if (a.deathT != null) {
+    const k = Math.min(1, a.deathT / 0.6);
+    ctx.globalAlpha = 1 - k;
+    ctx.scale(1 - k * 0.5, 1 - k * 0.5);
+    ctx.rotate(k * -0.6);
+  } else {
+    // scuttle wobble: small horizontal jiggle + rotation
+    const sc = Math.sin(elapsed * 14 + a.legPhase) * 0.06;
+    ctx.rotate(sc);
+  }
+
+  // shadow
+  ctx.fillStyle = 'rgba(58, 40, 24, 0.20)';
+  ctx.beginPath();
+  ctx.ellipse(0, 12, 14, 3, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 8 legs — curved bezier strokes radiating from body, two each side at 4 angles
+  ctx.strokeStyle = PALETTE.spiderPurple;
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  const legPhase = elapsed * 16 + a.legPhase;
+  const legAngles = [
+    [-1.0, -0.6],
+    [-0.6, -0.2],
+    [ 0.6,  0.2],
+    [ 1.0,  0.6],
+  ];
+  for (let side = -1; side <= 1; side += 2) {
+    let i = 0;
+    for (const [a1, a2] of legAngles) {
+      const sw = side * (Math.sin(legPhase + i++) * 0.6 + 1);
+      ctx.beginPath();
+      ctx.moveTo(side * 5, -1);
+      ctx.quadraticCurveTo(side * 11, a1 * 8 + sw, side * 14, a2 * 10 + sw);
+      ctx.stroke();
+    }
+  }
+
+  // body — purple oval
+  ctx.fillStyle = PALETTE.spiderPurple;
+  drawEllipse(ctx, 0, 0, 9, 11);
+  ctx.strokeStyle = PALETTE.ink;
+  ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, 9, 11, 0, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // head segment (smaller, in front toward hive direction = +y)
+  ctx.fillStyle = PALETTE.rustDark;
+  drawEllipse(ctx, 0, 9, 5, 5);
+  ctx.strokeStyle = PALETTE.ink;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.ellipse(0, 9, 5, 5, 0, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // 4 red eyes
+  ctx.fillStyle = PALETTE.redInk;
+  drawEllipse(ctx, -2.5, 9.5, 0.9, 0.9);
+  drawEllipse(ctx,  2.5, 9.5, 0.9, 0.9);
+  drawEllipse(ctx, -1.5, 11, 0.7, 0.7);
+  drawEllipse(ctx,  1.5, 11, 0.7, 0.7);
+
+  // bite proximity hint — a faint web glow when biting (alive only)
+  if (a.deathT == null && a.biteCD != null && a.biteCD < 0.15) {
+    ctx.globalAlpha = 0.4;
+    ctx.fillStyle = PALETTE.webWhite;
+    ctx.beginPath();
+    ctx.arc(0, 0, 24, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
   ctx.restore();
 }

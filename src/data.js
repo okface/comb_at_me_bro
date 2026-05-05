@@ -45,6 +45,17 @@ export const HORNET = {
   contactRange: 56,  // touches the hive when this close
 };
 
+export const SPIDER = {
+  hp: 9,
+  speed: 22,         // ~60% hornet speed
+  radius: 13,
+  contactRange: 56,
+  // Spiders eat striker particles in close range — punishes "rush at it"
+  // strategies and rewards Architects (walls) once those land.
+  biteRange: 36,
+  biteCooldown: 0.55, // seconds between bites — limits crowd-eat
+};
+
 export const STRIKER = {
   swarmCount: 5,           // strikers per volley
   cooldown: 1.6,           // seconds between volleys
@@ -60,25 +71,41 @@ export const STRIKER = {
   speedMulRange: [0.78, 1.22],
 };
 
-// Phase B1: procedural wave generator. Replaces hardcoded WAVE_A.
-// Wave n gets (3 + 2n) hornets over (18 + 3n) seconds.
-//   1 →  5 hornets in 21s    2 →  7 hornets in 24s
-//   3 →  9 hornets in 27s    4 → 11 hornets in 30s
-//   5 → 13 hornets in 33s
-// Spacing is deterministic with a small alternating jitter.
+// Procedural wave generator with attacker variety.
+// Hornets ramp continuously. Spiders intro at wave 4, scale up later.
+//   Wave 1: 5 hornets / 21s              (teaching loop)
+//   Wave 3: 9 hornets / 27s
+//   Wave 4: 10 hornets + 1 spider / 30s  (spider intro)
+//   Wave 7: 14 hornets + 3 spiders / 39s
+//   Wave 10: 18 hornets + 6 spiders / 48s
+//
+// Spawn timing is deterministic; spiders are interleaved at fixed offsets.
 export function generateWave(n) {
-  const count = 3 + n * 2;
+  const hornetCount = 4 + Math.floor(n * 1.6);
+  const spiderCount = n >= 4 ? n - 3 : 0;  // 1 at wave 4, 6 at wave 9, 7 at wave 10
   const duration = 18 + n * 3;
-  const step = duration / count;
   const spawns = [];
-  for (let i = 0; i < count; i++) {
-    const jitter = i % 2 === 0 ? 0 : 0.7;
-    spawns.push({ type: 'hornet', t: 1 + step * i + jitter });
+
+  // hornets — evenly distributed across the wave
+  const hornetStep = duration / Math.max(1, hornetCount);
+  for (let i = 0; i < hornetCount; i++) {
+    const jitter = i % 2 === 0 ? 0 : 0.6;
+    spawns.push({ type: 'hornet', t: 1 + hornetStep * i + jitter });
   }
+  // spiders — scattered across the back half so they arrive late
+  if (spiderCount > 0) {
+    const spiderStep = (duration * 0.65) / Math.max(1, spiderCount);
+    const spiderStart = duration * 0.30;
+    for (let i = 0; i < spiderCount; i++) {
+      spawns.push({ type: 'spider', t: spiderStart + spiderStep * i });
+    }
+  }
+  // sort by time so the spawn loop reads them in order
+  spawns.sort((a, b) => a.t - b.t);
   return { spawns, duration };
 }
 
-export const TOTAL_WAVES = 5; // B1 ships 5; full 30 lands in Phase C.
+export const TOTAL_WAVES = 10; // B2.4 ships 10; final 30 with bear+beekeeper in Phase C.
 
 // ============================================================
 // Phase B2 — economy + role investment
