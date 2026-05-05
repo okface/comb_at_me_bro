@@ -1130,7 +1130,40 @@ function drawFx(ctx, state) {
     else if (f.kind === 'reward')      drawFxReward(ctx, f, k);
     else if (f.kind === 'tap-ripple')  drawFxTapRipple(ctx, f, k);
     else if (f.kind === 'synergy')     drawFxSynergy(ctx, f, k);
+    else if (f.kind === 'ability-burst') drawFxAbilityBurst(ctx, f, k);
   }
+}
+
+// Big ability-cast ring expanding from the hive
+function drawFxAbilityBurst(ctx, f, k) {
+  const r = f.r0 + (f.r1 - f.r0) * k;
+  const alpha = (1 - k) * 0.85;
+  ctx.save();
+  ctx.translate(f.x, f.y);
+  ctx.globalAlpha = alpha;
+  // outer honey ring
+  ctx.strokeStyle = PALETTE.honey;
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.stroke();
+  // inner deep ring
+  ctx.globalAlpha = alpha * 0.6;
+  ctx.strokeStyle = PALETTE.honeyDark;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 0.86, 0, Math.PI * 2);
+  ctx.stroke();
+  // sparkle dots on the ring
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = PALETTE.honeyLight;
+  for (let i = 0; i < 12; i++) {
+    const a = (Math.PI * 2 / 12) * i + k * 1.5;
+    ctx.beginPath();
+    ctx.arc(Math.cos(a) * r, Math.sin(a) * r, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
 }
 
 // Synergy toast — eyebrow + name + description, slides in like a banner

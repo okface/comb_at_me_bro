@@ -8,9 +8,10 @@ import {
   setModifier, pickModifierOptions,
   applyBoon, pickBoonOptions,
   setPriorityTarget,
+  getAvailableAbilities, getAbilityCost, canUseAbility, useAbility, isRallyActive,
 } from './game.js?v=__VERSION__';
 import { render } from './render.js?v=__VERSION__';
-import { ROLES, ROLE_ORDER } from './data.js?v=__VERSION__';
+import { ROLES, ROLE_ORDER, ABILITIES } from './data.js?v=__VERSION__';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -44,6 +45,8 @@ const modifierTag = document.getElementById('modifier-tag');
 const boonPicker = document.getElementById('boon-picker');
 const boonOptions = document.getElementById('boon-options');
 let boonPickerScheduled = false;
+const abilityBar = document.getElementById('ability-bar');
+const abilityButtons = {}; // id -> { el, glyph, cost, cd }
 
 let state = null;
 let dpr = 1;
@@ -94,10 +97,92 @@ function flashPill(el) {
   el.classList.add('flash');
 }
 
+// ============================================================================
+// Ability bar — bottom-of-screen tap-to-cast strip during combat
+// ============================================================================
+function updateAbilityBar() {
+  if (state.phase !== 'active') {
+    abilityBar.classList.add('hidden');
+    return;
+  }
+  const ids = getAvailableAbilities(state);
+  if (ids.length === 0) {
+    abilityBar.classList.add('hidden');
+    return;
+  }
+  abilityBar.classList.remove('hidden');
+  // build buttons that don't yet exist
+  for (const id of ids) {
+    if (!abilityButtons[id]) buildAbilityButton(id);
+  }
+  // remove buttons whose ability is no longer available (rare)
+  for (const existingId of Object.keys(abilityButtons)) {
+    if (!ids.includes(existingId)) {
+      abilityButtons[existingId].el.remove();
+      delete abilityButtons[existingId];
+    }
+  }
+  // refresh state per button
+  for (const id of ids) {
+    refreshAbilityButton(id);
+  }
+}
+
+function buildAbilityButton(id) {
+  const ab = ABILITIES[id];
+  const btn = document.createElement('button');
+  btn.className = 'ability-btn';
+  btn.innerHTML = `
+    <span class="ab-glyph">${ab.glyph}</span>
+    <span class="ab-cost"></span>
+    <span class="ab-name">${ab.name}</span>
+    <div class="ab-cd ready"></div>
+  `;
+  btn.addEventListener('click', () => {
+    if (useAbility(state, id)) {
+      flashPill(hud.honeyPill);
+    }
+  });
+  abilityBar.appendChild(btn);
+  abilityButtons[id] = {
+    el: btn,
+    glyph: btn.querySelector('.ab-glyph'),
+    cost: btn.querySelector('.ab-cost'),
+    cd: btn.querySelector('.ab-cd'),
+  };
+}
+
+function refreshAbilityButton(id) {
+  const slot = abilityButtons[id];
+  if (!slot) return;
+  const cost = getAbilityCost(state, id);
+  const costStr = [
+    cost.honey > 0 ? `${cost.honey}🍯` : '',
+    cost.larvae > 0 ? `${cost.larvae}🐝` : '',
+  ].filter(Boolean).join(' ');
+  slot.cost.textContent = costStr || '—';
+  const cd = state.abilityCooldowns[id] ?? 0;
+  if (cd > 0.05) {
+    slot.cd.classList.remove('ready');
+    slot.cd.textContent = cd.toFixed(1);
+  } else {
+    slot.cd.classList.add('ready');
+    slot.cd.textContent = '';
+  }
+  const can = canUseAbility(state, id);
+  slot.el.disabled = !can;
+  slot.el.classList.toggle('unaffordable',
+    !can && cd <= 0.05 && (state.honey < cost.honey || state.larvae < cost.larvae));
+  // glow when this ability's effect is active
+  const glowing = id === 'rally_hum' && isRallyActive(state);
+  slot.el.classList.toggle('glowing', glowing);
+}
+
 function syncHUD(force = false) {
   if (!state) return;
   // currency + HP + wave update every frame (cheap)
   updateCurrencyDisplay();
+  updateAbilityBar();
   hud.hp.textContent = `HP ${Math.ceil(state.hive.hp)} / ${state.hive.maxHP}`;
   hud.wave.textContent = state.wave === 0
     ? `WAVE 0 / ${state.totalWaves}`

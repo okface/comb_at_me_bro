@@ -438,6 +438,35 @@ export const BOONS = [
 export const BOON_WAVES = [3, 6];
 
 // ============================================================
+// Active abilities — player-triggered effects during combat.
+// Per fun-audit feedback: ONE ability, deeply scaled with role investments,
+// is the fix for "agency collapse" during waves. More abilities can layer on
+// later, but only after we confirm this loop feels good.
+// ============================================================
+export const ABILITIES = {
+  rally_hum: {
+    id: 'rally_hum',
+    name: 'Rally Hum',
+    glyph: '✦',
+    description: 'For a few seconds, your strikers fire and fly faster.',
+    available: () => true,
+
+    // Honey cost — falls with Forager investment (15 → 9 at rank 3)
+    getHoneyCost: (state) => Math.max(6, 15 - (state.roles?.forager?.rank ?? 0) * 2),
+    // Cooldown — falls with Forager investment (8s → 5s at rank 3)
+    getCooldown: (state) => Math.max(3.5, 8 - (state.roles?.forager?.rank ?? 0) * 1),
+    // Effect duration — grows with Striker investment (4s → 5.5s at rank 3)
+    getDuration: (state) => 4 + (state.roles?.striker?.rank ?? 0) * 0.5,
+    // Attack-speed multiplier on the striker cooldown (0.7 → 0.55 at striker rank 3)
+    getAttackSpeedMul: (state) => 0.7 - (state.roles?.striker?.rank ?? 0) * 0.05,
+    // Movement-speed multiplier on striker particles
+    getMoveSpeedMul: (state) => 1.15 + (state.roles?.striker?.rank ?? 0) * 0.05,
+  },
+};
+
+export const ABILITY_ORDER = ['rally_hum'];
+
+// ============================================================
 // Hidden synergies — auto-activate when role rank thresholds align.
 // Each fires a one-time toast the first time it activates in a run,
 // then quietly applies its effect from then on.

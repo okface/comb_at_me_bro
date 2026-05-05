@@ -5,6 +5,7 @@ import {
   HIVE, HORNET, SPIDER, BEAR, BEEKEEPER, STRIKER,
   ECONOMY, ROLES, ROLE_ORDER,
   MODIFIERS, BOONS, BOON_WAVES, SYNERGIES, isSynergyActive,
+  ABILITIES, ABILITY_ORDER,
   generateWave, TOTAL_WAVES,
 } from './data.js?v=__VERSION__';
 
@@ -68,11 +69,76 @@ export function createState(width, height) {
     killsThisWave: 0,
     // Queen's Decree — track upgrades this wave (first free)
     upgradesThisWave: 0,
+    // Active abilities — cooldown timer + active buff state per ability
+    abilityCooldowns: { rally_hum: 0 },
+    rallyEndsAt: 0,
   };
 }
 
 export function hasSpec(state, roleKey, specId) {
   return state.roles[roleKey].spec === specId;
+}
+
+// ----------------------------------------------------------------------------
+// Active abilities
+// ----------------------------------------------------------------------------
+export function getAvailableAbilities(state) {
+  return ABILITY_ORDER.filter(id => ABILITIES[id].available(state));
+}
+
+export function getAbilityCost(state, id) {
+  const ab = ABILITIES[id];
+  return {
+    honey: ab.getHoneyCost ? ab.getHoneyCost(state) : (ab.honeyCost || 0),
+    larvae: ab.getLarvaeCost ? ab.getLarvaeCost(state) : (ab.larvaeCost || 0),
+    cooldown: ab.getCooldown ? ab.getCooldown(state) : (ab.cooldown || 0),
+  };
+}
+
+export function canUseAbility(state, id) {
+  if (state.phase !== 'active') return false;
+  const ab = ABILITIES[id];
+  if (!ab || !ab.available(state)) return false;
+  if ((state.abilityCooldowns[id] ?? 0) > 0.05) return false;
+  const cost = getAbilityCost(state, id);
+  if (state.honey < cost.honey) return false;
+  if (state.larvae < cost.larvae) return false;
+  return true;
+}
+
+export function useAbility(state, id) {
+  if (!canUseAbility(state, id)) return false;
+  const cost = getAbilityCost(state, id);
+  state.honey -= cost.honey;
+  state.larvae -= cost.larvae;
+  state.abilityCooldowns[id] = cost.cooldown;
+  applyAbilityEffect(state, id);
+  return true;
+}
+
+function applyAbilityEffect(state, id) {
+  const ab = ABILITIES[id];
+  if (id === 'rally_hum') {
+    const dur = ab.getDuration(state);
+    state.rallyEndsAt = state.elapsed + dur;
+    // big visual punch — honey ripple from the hive + flash
+    state.fx.push({
+      kind: 'ability-burst',
+      x: state.hive.x, y: state.hive.y,
+      r0: state.hive.radius * 1.05,
+      r1: state.hive.radius * 4,
+      t: 0, life: 0.6,
+    });
+    state.fx.push({
+      kind: 'reward', text: 'RALLY HUM',
+      x: state.hive.x, y: state.hive.y - state.hive.radius - 40,
+      t: 0, life: 1.4,
+    });
+  }
+}
+
+export function isRallyActive(state) {
+  return state.rallyEndsAt > state.elapsed;
 }
 
 // Add honey. Overflow is consumed by:
@@ -316,6 +382,8 @@ export function restartRun(state) {
   state.waxHP = 0;
   state.killsThisWave = 0;
   state.upgradesThisWave = 0;
+  state.rallyEndsAt = 0;
+  for (const k of Object.keys(state.abilityCooldowns)) state.abilityCooldowns[k] = 0;
   for (const k of ROLE_ORDER) {
     state.roles[k].rank = 0;
     state.roles[k].spec = null;
@@ -455,11 +523,15 @@ export function isAtPopCap(state) {
 }
 
 export function getEffectiveStrikerSpeed(state) {
-  return STRIKER.speed * (getEff(state).strikerSpeedMul ?? 1);
+  let mul = (getEff(state).strikerSpeedMul ?? 1);
+  if (isRallyActive(state)) mul *= ABILITIES.rally_hum.getMoveSpeedMul(state);
+  return STRIKER.speed * mul;
 }
 
 export function getEffectiveStrikerCooldown(state) {
-  return STRIKER.cooldown * (getEff(state).strikerCooldownMul ?? 1);
+  let mul = (getEff(state).strikerCooldownMul ?? 1);
+  if (isRallyActive(state)) mul *= ABILITIES.rally_hum.getAttackSpeedMul(state);
+  return STRIKER.cooldown * mul;
 }
 
 export function getEffectiveStrikerDamage(state, target) {
@@ -546,6 +618,13 @@ export function updateState(state, dt) {
   }
 
   state.elapsed += dt;
+
+  // --- ability cooldowns tick down (active phase only)
+  for (const id of ABILITY_ORDER) {
+    if (state.abilityCooldowns[id] > 0) {
+      state.abilityCooldowns[id] = Math.max(0, state.abilityCooldowns[id] - dt);
+    }
+  }
 
   // --- foragers tick honey (capped at storage; overflow may heal via synergy)
   const honeyTick = getForagerHoneyPerSec(state) * dt;

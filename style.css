@@ -421,6 +421,114 @@ html, body {
   margin: 0;
 }
 
+/* ============================================================
+   Ability bar — bottom of screen during combat
+   ============================================================ */
+.ability-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: max(env(safe-area-inset-bottom), 14px);
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  padding: 0 14px;
+  pointer-events: none;
+  z-index: 8;
+}
+
+.ability-bar.hidden { display: none; }
+
+.ability-btn {
+  pointer-events: auto;
+  position: relative;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  width: 72px;
+  height: 72px;
+  padding: 4px;
+  cursor: pointer;
+  box-shadow: 0 4px 0 rgba(58, 40, 24, 0.35);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  font-family: inherit;
+  border-radius: 4px;
+  user-select: none;
+}
+
+.ability-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 rgba(58, 40, 24, 0.35);
+}
+
+.ability-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.ability-btn.unaffordable {
+  background: var(--paper-2, #E8DCBF);
+}
+
+.ability-btn .ab-glyph {
+  font-size: 28px;
+  line-height: 1;
+  font-family: Georgia, 'Fraunces', serif;
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.ability-btn .ab-cost {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  margin-top: 1px;
+}
+
+.ability-btn .ab-name {
+  font-size: 8.5px;
+  letter-spacing: 0.1em;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  margin-top: 1px;
+}
+
+/* Cooldown overlay — circular sweep */
+.ability-btn .ab-cd {
+  position: absolute;
+  inset: 4px;
+  background: rgba(58, 40, 24, 0.55);
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--paper);
+  font-weight: 700;
+  font-size: 16px;
+  font-family: Georgia, 'Fraunces', serif;
+}
+
+.ability-btn .ab-cd.ready {
+  display: none;
+}
+
+/* Active glow when buff is running */
+.ability-btn.glowing {
+  background: var(--honey-light, #F7DDA0);
+  box-shadow: 0 4px 0 rgba(58, 40, 24, 0.35),
+              0 0 14px 4px rgba(242, 194, 74, 0.45);
+  animation: ability-glow 0.7s ease-in-out infinite alternate;
+}
+
+@keyframes ability-glow {
+  from { filter: brightness(1); }
+  to   { filter: brightness(1.18); }
+}
+
 .primary-btn {
   pointer-events: auto;
   background: var(--ink);
