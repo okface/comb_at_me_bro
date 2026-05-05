@@ -166,8 +166,45 @@ function drawField(ctx, state) {
   const pat = ctx.createPattern(tile, 'repeat');
   ctx.fillStyle = pat || PALETTE.sage;
   ctx.fillRect(0, 0, state.width, state.height);
+  // subtle vertical gradient — darker at top (where danger lives), warmer near hive
+  const grad = ctx.createLinearGradient(0, 0, 0, state.height);
+  grad.addColorStop(0,   'rgba(58, 40, 24, 0.18)');
+  grad.addColorStop(0.5, 'rgba(58, 40, 24, 0.05)');
+  grad.addColorStop(1,   'rgba(247, 221, 160, 0.10)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, state.width, state.height);
   drawGrassTufts(ctx, state.width, state.height);
+  drawLeaves(ctx, state.width, state.height);
   drawGrassPath(ctx, state.width, state.height);
+}
+
+// Static leaf decorations scattered across the field
+const LEAF_POSITIONS = [
+  { x: 0.16, y: 0.32, rot: 0.4 },  { x: 0.84, y: 0.28, rot: -0.3 },
+  { x: 0.40, y: 0.62, rot: 0.2 },  { x: 0.66, y: 0.48, rot: -0.6 },
+  { x: 0.08, y: 0.55, rot: 0.5 },  { x: 0.92, y: 0.62, rot: 0.1 },
+  { x: 0.28, y: 0.18, rot: -0.4 }, { x: 0.74, y: 0.14, rot: 0.7 },
+];
+function drawLeaves(ctx, w, h) {
+  for (const L of LEAF_POSITIONS) {
+    const x = L.x * w;
+    const y = L.y * h;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(L.rot);
+    ctx.fillStyle = PALETTE.sageDark;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 6, 2.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = PALETTE.ink;
+    ctx.lineWidth = 0.6;
+    ctx.globalAlpha = 0.4;
+    ctx.beginPath();
+    ctx.moveTo(-5, 0);
+    ctx.lineTo(5, 0);
+    ctx.stroke();
+    ctx.restore();
+  }
 }
 
 // A meandering ink trail leading up to the hive — gives the field intent
@@ -786,24 +823,36 @@ function drawHexStroke(ctx, cx, cy, size) {
 // Wildflowers — static decorative flowers scattered in the lower field
 // ============================================================================
 const FLOWER_POSITIONS = [
-  { x: 0.10, y: 0.74, c: 'jelly' },   { x: 0.22, y: 0.88, c: 'honey' },
-  { x: 0.34, y: 0.80, c: 'redInk' },  { x: 0.46, y: 0.93, c: 'jelly' },
-  { x: 0.62, y: 0.86, c: 'honey' },   { x: 0.74, y: 0.79, c: 'redInk' },
-  { x: 0.86, y: 0.92, c: 'jelly' },   { x: 0.92, y: 0.78, c: 'honey' },
-  { x: 0.06, y: 0.92, c: 'honey' },   { x: 0.55, y: 0.74, c: 'redInk' },
+  // hive-area flowers (lower 1/3) — denser
+  { x: 0.10, y: 0.74, c: 'jelly',  s: 1.0 },   { x: 0.22, y: 0.88, c: 'honey',  s: 1.0 },
+  { x: 0.34, y: 0.80, c: 'redInk', s: 1.0 },   { x: 0.46, y: 0.93, c: 'jelly',  s: 1.0 },
+  { x: 0.62, y: 0.86, c: 'honey',  s: 1.0 },   { x: 0.74, y: 0.79, c: 'redInk', s: 1.0 },
+  { x: 0.86, y: 0.92, c: 'jelly',  s: 1.0 },   { x: 0.92, y: 0.78, c: 'honey',  s: 1.0 },
+  { x: 0.06, y: 0.92, c: 'honey',  s: 1.0 },   { x: 0.55, y: 0.74, c: 'redInk', s: 1.0 },
+  { x: 0.18, y: 0.82, c: 'honey',  s: 0.85 },  { x: 0.40, y: 0.96, c: 'jelly',  s: 0.85 },
+  { x: 0.68, y: 0.94, c: 'redInk', s: 0.85 },  { x: 0.80, y: 0.84, c: 'jelly',  s: 0.85 },
+  // mid-field flowers (smaller, distant)
+  { x: 0.04, y: 0.65, c: 'jelly',  s: 0.7 },   { x: 0.96, y: 0.66, c: 'honey',  s: 0.7 },
+  { x: 0.20, y: 0.55, c: 'redInk', s: 0.7 },   { x: 0.78, y: 0.50, c: 'jelly',  s: 0.7 },
+  { x: 0.45, y: 0.50, c: 'honey',  s: 0.7 },   { x: 0.55, y: 0.42, c: 'jelly',  s: 0.7 },
+  // upper-field flowers (very small, decorative)
+  { x: 0.12, y: 0.36, c: 'redInk', s: 0.55 },  { x: 0.86, y: 0.40, c: 'jelly',  s: 0.55 },
+  { x: 0.30, y: 0.24, c: 'honey',  s: 0.55 },  { x: 0.70, y: 0.22, c: 'redInk', s: 0.55 },
+  { x: 0.50, y: 0.16, c: 'jelly',  s: 0.55 },
 ];
 function drawWildflowers(ctx, state) {
   const { width: w, height: h } = state;
   for (const f of FLOWER_POSITIONS) {
     const x = f.x * w;
     const y = f.y * h;
-    drawFlower(ctx, x, y, PALETTE[f.c]);
+    drawFlower(ctx, x, y, PALETTE[f.c], f.s ?? 1);
   }
 }
-function drawFlower(ctx, x, y, petalColor) {
-  // 5 petals + center + tiny stem
+
+function drawFlower(ctx, x, y, petalColor, scale = 1) {
   ctx.save();
   ctx.translate(x, y);
+  ctx.scale(scale, scale);
   // stem
   ctx.strokeStyle = PALETTE.sageDark;
   ctx.lineWidth = 1.1;
@@ -821,16 +870,18 @@ function drawFlower(ctx, x, y, petalColor) {
     ctx.ellipse(px, py, 1.7, 2.2, a, 0, Math.PI * 2);
     ctx.fill();
   }
-  // ink outline halo
-  ctx.strokeStyle = PALETTE.ink;
-  ctx.lineWidth = 0.5;
-  for (let i = 0; i < 5; i++) {
-    const a = (Math.PI * 2 / 5) * i - Math.PI / 2;
-    const px = Math.cos(a) * 2.6;
-    const py = Math.sin(a) * 2.6;
-    ctx.beginPath();
-    ctx.ellipse(px, py, 1.7, 2.2, a, 0, Math.PI * 2);
-    ctx.stroke();
+  // ink outline (only on bigger flowers — small distant ones skip outline for cleaner look)
+  if (scale >= 0.7) {
+    ctx.strokeStyle = PALETTE.ink;
+    ctx.lineWidth = 0.5;
+    for (let i = 0; i < 5; i++) {
+      const a = (Math.PI * 2 / 5) * i - Math.PI / 2;
+      const px = Math.cos(a) * 2.6;
+      const py = Math.sin(a) * 2.6;
+      ctx.beginPath();
+      ctx.ellipse(px, py, 1.7, 2.2, a, 0, Math.PI * 2);
+      ctx.stroke();
+    }
   }
   // center
   ctx.fillStyle = PALETTE.honeyDark;
