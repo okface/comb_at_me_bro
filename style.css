@@ -84,6 +84,10 @@ html, body {
   opacity: 0.85;
 }
 
+/* During an active wave the status / ROLES / READY row is redundant
+   (banner shows the wave; abilities take its space). Hide it. */
+.hud-row.bottom.during-wave-hidden { display: none; }
+
 .hud-stack { display: flex; flex-direction: column; gap: 8px; }
 
 .hud-row.currency {

@@ -25,6 +25,7 @@ const hud = {
   honeyPill: document.getElementById('honey-pill'),
   larvaeAmount: document.getElementById('larvae-amount'),
   larvaePill: document.getElementById('larvae-pill'),
+  bottomRow: document.querySelector('#hud .hud-row.bottom'),
 };
 let prevHoneyDisplay = null;
 let prevLarvaeDisplay = null;
@@ -235,6 +236,7 @@ function syncHUD(force = false) {
   if (!force && state.phase === lastPhase) return;
   lastPhase = state.phase;
 
+  hud.bottomRow.classList.toggle('during-wave-hidden', state.phase === 'active');
   switch (state.phase) {
     case 'idle':
       if (state.wave === 0) {
