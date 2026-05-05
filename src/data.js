@@ -46,15 +46,18 @@ export const HORNET = {
 };
 
 export const STRIKER = {
-  // Phase A: a single fixed-size swarm volley each cooldown.
   swarmCount: 5,           // strikers per volley
   cooldown: 1.6,           // seconds between volleys
-  speed: 130,              // px / sec
+  speed: 130,              // px / sec base; each bee gets a per-particle multiplier
   damagePerHit: 1,
   hitRadius: 14,
   particleSize: 3.5,
-  // jitter in launch position so swarms don't stack on a single pixel
   spreadRadius: 18,
+  // Swarm character — each bee gets a phase, wobble amp/freq, and speed
+  // multiplier so the cloud feels alive instead of moving as a rigid block.
+  wobbleAmpRange: [22, 60],   // px/sec perpendicular oscillation amplitude
+  wobbleFreqRange: [4, 10],   // radians/sec
+  speedMulRange: [0.78, 1.22],
 };
 
 // Phase B1: procedural wave generator. Replaces hardcoded WAVE_A.

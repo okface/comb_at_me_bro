@@ -126,7 +126,7 @@ export function updateState(state, dt) {
     }
   }
 
-  // --- swarm particles fly to target
+  // --- swarm particles fly to target with per-bee wobble + speed variance
   for (const s of state.swarms) {
     if (!s.alive) continue;
     if (!s.target || s.target.deathT != null) {
@@ -137,8 +137,17 @@ export function updateState(state, dt) {
     const dx = s.target.x - s.x;
     const dy = s.target.y - s.y;
     const d = Math.hypot(dx, dy) || 1;
-    s.x += (dx / d) * STRIKER.speed * dt;
-    s.y += (dy / d) * STRIKER.speed * dt;
+    const dirX = dx / d, dirY = dy / d;
+    // perpendicular for sideways wobble
+    const perpX = -dirY * s.flip, perpY = dirX * s.flip;
+    // tighten the wobble as the bee closes in on the target
+    // (full wobble at >120px out, none at hit range — strike feels decisive)
+    const closeFactor = Math.min(1, Math.max(0, (d - STRIKER.hitRadius) / 110));
+    const wobbleV = Math.cos(state.elapsed * s.wobbleFreq + s.phase)
+                  * s.wobbleAmp * closeFactor;
+    const baseSpeed = STRIKER.speed * s.speedMul;
+    s.x += (dirX * baseSpeed + perpX * wobbleV) * dt;
+    s.y += (dirY * baseSpeed + perpY * wobbleV) * dt;
     if (d < STRIKER.hitRadius) {
       s.target.hp -= STRIKER.damagePerHit;
       s.alive = false;
@@ -212,6 +221,9 @@ function pickClosestLiveAttacker(state, fromX, fromY) {
 function launchSwarm(state, target) {
   const cx = state.hive.x;
   const cy = state.hive.y - state.hive.radius * 0.3;
+  const [waMin, waMax] = STRIKER.wobbleAmpRange;
+  const [wfMin, wfMax] = STRIKER.wobbleFreqRange;
+  const [smMin, smMax] = STRIKER.speedMulRange;
   for (let i = 0; i < STRIKER.swarmCount; i++) {
     const a = Math.random() * Math.PI * 2;
     const r = Math.random() * STRIKER.spreadRadius;
@@ -220,6 +232,13 @@ function launchSwarm(state, target) {
       y: cy + Math.sin(a) * r,
       target,
       alive: true,
+      // per-bee swarm character
+      phase:     Math.random() * Math.PI * 2,
+      wobbleAmp: waMin + Math.random() * (waMax - waMin),
+      wobbleFreq: wfMin + Math.random() * (wfMax - wfMin),
+      speedMul:  smMin + Math.random() * (smMax - smMin),
+      // perpendicular flip so half wobble left-first and half right-first
+      flip: Math.random() < 0.5 ? 1 : -1,
     });
   }
 }
