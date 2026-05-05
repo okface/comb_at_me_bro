@@ -114,9 +114,9 @@ function syncHUD(force = false) {
   switch (state.phase) {
     case 'idle':
       if (state.wave === 0) {
-        hud.status.textContent = 'tap READY to start';
+        hud.status.textContent = 'tap READY when the hive is set';
       } else {
-        hud.status.textContent = `wave ${state.wave} cleared · next?`;
+        hud.status.textContent = `wave ${state.wave} held — ready for the next?`;
       }
       hud.ready.classList.remove('hidden');
       rolesBtn.classList.remove('hidden');
@@ -131,22 +131,22 @@ function syncHUD(force = false) {
       }
       break;
     case 'active':
-      hud.status.textContent = `wave ${state.wave} in progress`;
+      hud.status.textContent = `wave ${state.wave} at the gates`;
       hud.ready.classList.add('hidden');
       rolesBtn.classList.add('hidden');
       hideRolesPanel();
       hideOverlay();
       break;
     case 'won':
-      hud.status.textContent = 'queen victorious';
+      hud.status.textContent = 'the hive holds';
       hud.ready.classList.add('hidden');
       rolesBtn.classList.add('hidden');
       hideRolesPanel();
       // small delay so the in-canvas banner is visible first
       setTimeout(() => showOverlay(
-        'Queen Victorious',
-        `You held the hive across ${state.totalWaves} waves.`,
-        'New Run'
+        'Dawn Breaks',
+        `You held the hive through all ${state.totalWaves} waves.`,
+        'Another Dawn'
       ), 1200);
       break;
     case 'lost':
@@ -156,8 +156,8 @@ function syncHUD(force = false) {
       hideRolesPanel();
       setTimeout(() => showOverlay(
         'The Hive Has Fallen',
-        `You held to wave ${state.wave} of ${state.totalWaves}.`,
-        'Try Again'
+        `You stood until wave ${state.wave} of ${state.totalWaves}.`,
+        'Begin Again'
       ), 1200);
       break;
   }
@@ -169,18 +169,16 @@ function syncHUD(force = false) {
 function describeNextEffect(key, currentRank) {
   const role = ROLES[key];
   switch (key) {
-    case 'forager': {
-      const nextTotal = (currentRank + 1) * role.perRankHoneyPerSec;
-      return `+${role.perRankHoneyPerSec.toFixed(1)} 🍯/s during waves (→ ${nextTotal.toFixed(1)}/s total)`;
-    }
+    case 'forager':
+      return `+${role.perRankHoneyPerSec.toFixed(1)} 🍯/sec`;
     case 'nurse':
-      return `+${role.perRankLarvaePerWave} larva per wave clear`;
+      return `+${role.perRankLarvaePerWave} larva per wave`;
     case 'guard':
-      return `+${role.perRankContactDPS} dmg/s to attackers at the hive`;
+      return `+${role.perRankContactDPS} damage/sec at the door`;
     case 'striker':
-      return `+${role.perRankSwarmBonus} bees per swarm volley`;
+      return `+${role.perRankSwarmBonus} bees per volley`;
     case 'architect':
-      return `+${role.perRankHiveHP} max HP, +${role.perRankStorage} honey storage`;
+      return `+${role.perRankHiveHP} hive HP, +${role.perRankStorage} honey storage`;
     default:
       return '+1 rank';
   }
@@ -292,7 +290,6 @@ function showModifierPicker() {
       <h3 class="mod-name">${m.name}</h3>
       <p class="mod-summary">${m.summary}</p>
       <p class="mod-flavor">"${m.flavor}"</p>
-      <p class="mod-pushes">Pushes ${m.pushes}</p>
     `;
     card.addEventListener('click', () => {
       setModifier(state, m.id);
@@ -321,7 +318,6 @@ function showBoonPicker() {
       <h3 class="mod-name">${b.name}</h3>
       <p class="mod-summary">${b.summary}</p>
       <p class="mod-flavor">"${b.flavor}"</p>
-      <p class="mod-pushes">${b.archetype}</p>
     `;
     card.addEventListener('click', () => {
       if (applyBoon(state, b.id)) {
