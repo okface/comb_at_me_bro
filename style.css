@@ -128,6 +128,227 @@ html, body {
   100% { background: var(--paper); transform: translateY(0); }
 }
 
+/* ============================================================
+   Bottom action bar / ghost button
+   ============================================================ */
+.bottom-actions {
+  display: inline-flex !important;
+  gap: 8px;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  pointer-events: auto;
+}
+
+.ghost-btn {
+  pointer-events: auto;
+  background: var(--paper);
+  color: var(--ink);
+  border: 2px solid var(--ink);
+  padding: 12px 18px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  cursor: pointer;
+  border-radius: 2px;
+  min-height: 44px;
+  min-width: 80px;
+  box-shadow: 0 3px 0 rgba(58, 40, 24, 0.35);
+}
+
+.ghost-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 rgba(58, 40, 24, 0.35);
+}
+
+.ghost-btn.hidden { display: none; }
+
+/* ============================================================
+   Bottom-sheet panel (Roles)
+   ============================================================ */
+.panel {
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+  display: flex;
+  align-items: flex-end;
+  background: rgba(58, 40, 24, 0.55);
+  pointer-events: auto;
+  transition: background 0.2s ease;
+}
+
+.panel.hidden {
+  display: none;
+}
+
+.panel-card {
+  width: 100%;
+  background: var(--paper);
+  border-top: 2px solid var(--ink);
+  padding: 18px 16px max(env(safe-area-inset-bottom), 18px);
+  max-height: 78vh;
+  overflow-y: auto;
+  box-shadow: 0 -6px 0 rgba(58, 40, 24, 0.3);
+  animation: panel-slide-up 0.28s ease-out;
+}
+
+@keyframes panel-slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px dashed var(--rule);
+  gap: 12px;
+}
+
+.panel-header h2 {
+  font-family: Georgia, 'Fraunces', serif;
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+.panel-honey-tag {
+  flex: 1;
+  text-align: right;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: 0;
+}
+
+.text-btn {
+  background: transparent;
+  border: none;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 8px 10px;
+  flex: 0 0 auto;
+}
+
+/* ============================================================
+   Role cards inside the Roles panel
+   ============================================================ */
+.role-card {
+  background: var(--paper-2, #E8DCBF);
+  border: 1.5px solid var(--ink);
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 8px 14px;
+  align-items: center;
+  position: relative;
+}
+
+.role-card .role-glyph {
+  grid-column: 1;
+  grid-row: 1 / span 3;
+  font-size: 26px;
+  text-align: center;
+  align-self: start;
+  padding-top: 4px;
+}
+
+.role-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.05em;
+}
+
+.role-rank-dots {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.role-rank-dots .dot {
+  width: 9px;
+  height: 9px;
+  border: 1px solid var(--ink);
+  border-radius: 50%;
+}
+
+.role-rank-dots .dot.filled {
+  background: var(--honey, #F2C24A);
+}
+
+.role-desc {
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+
+.role-next {
+  font-size: 12px;
+  color: var(--ink);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.role-next b {
+  color: var(--honey-deep, #B66B1E);
+}
+
+.role-next-text {
+  flex: 1;
+}
+
+.role-btn {
+  background: var(--ink);
+  color: var(--paper);
+  border: none;
+  padding: 8px 14px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  border-radius: 2px;
+  min-height: 36px;
+  white-space: nowrap;
+}
+
+.role-btn:active { transform: translateY(1px); }
+
+.role-btn:disabled {
+  background: transparent;
+  color: var(--ink-soft);
+  border: 1px solid var(--rule);
+  cursor: not-allowed;
+}
+
+.role-cost {
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--ink);
+}
+
+.role-cost.unaffordable {
+  color: var(--rust, #8A3A1C);
+}
+
+.role-card.maxed {
+  opacity: 0.7;
+  background: var(--paper);
+}
+
 .primary-btn {
   pointer-events: auto;
   background: var(--ink);

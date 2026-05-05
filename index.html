@@ -31,7 +31,21 @@
       </div>
       <div class="hud-row bottom">
         <span id="status">tap READY to start</span>
-        <button id="ready-btn" class="primary-btn">READY</button>
+        <span class="bottom-actions">
+          <button id="roles-btn" class="ghost-btn">ROLES</button>
+          <button id="ready-btn" class="primary-btn">READY</button>
+        </span>
+      </div>
+    </div>
+
+    <div id="roles-panel" class="panel hidden">
+      <div class="panel-card">
+        <header class="panel-header">
+          <h2>Roles</h2>
+          <span class="panel-honey-tag">🍯 <span id="panel-honey">0</span></span>
+          <button id="roles-done" class="text-btn">DONE</button>
+        </header>
+        <div id="roles-list" class="roles-list"></div>
       </div>
     </div>
     <div id="overlay" class="hidden">
