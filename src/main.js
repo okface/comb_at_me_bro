@@ -4,6 +4,7 @@ import {
   createState, resizeState, updateState,
   startNextWave, restartRun,
   investRole, getRoleNextCost,
+  setModifier, pickModifierOptions,
 } from './game.js?v=__VERSION__';
 import { render } from './render.js?v=__VERSION__';
 import { ROLES, ROLE_ORDER } from './data.js?v=__VERSION__';
@@ -34,6 +35,9 @@ const rolesPanel = document.getElementById('roles-panel');
 const rolesList = document.getElementById('roles-list');
 const rolesDone = document.getElementById('roles-done');
 const panelHoney = document.getElementById('panel-honey');
+const modifierPicker = document.getElementById('modifier-picker');
+const modifierOptions = document.getElementById('modifier-options');
+const modifierTag = document.getElementById('modifier-tag');
 
 let state = null;
 let dpr = 1;
@@ -92,6 +96,13 @@ function syncHUD(force = false) {
   hud.wave.textContent = state.wave === 0
     ? `WAVE 0 / ${state.totalWaves}`
     : `WAVE ${state.wave} / ${state.totalWaves}`;
+  // modifier tag
+  if (state.modifier) {
+    modifierTag.textContent = state.modifier.name;
+    modifierTag.style.display = 'inline-block';
+  } else {
+    modifierTag.style.display = 'none';
+  }
   if (!force && state.phase === lastPhase) return;
   lastPhase = state.phase;
 
@@ -254,7 +265,31 @@ hud.ready.addEventListener('click', () => {
 
 titlePlay.addEventListener('click', () => {
   titleScreen.classList.add('hidden');
+  showModifierPicker();
 });
+
+function showModifierPicker() {
+  modifierOptions.innerHTML = '';
+  const opts = pickModifierOptions(3);
+  for (const m of opts) {
+    const card = document.createElement('div');
+    card.className = 'modifier-card';
+    card.dataset.modId = m.id;
+    card.innerHTML = `
+      <h3 class="mod-name">${m.name}</h3>
+      <p class="mod-summary">${m.summary}</p>
+      <p class="mod-flavor">"${m.flavor}"</p>
+      <p class="mod-pushes">Pushes ${m.pushes}</p>
+    `;
+    card.addEventListener('click', () => {
+      setModifier(state, m.id);
+      modifierPicker.classList.add('hidden');
+      syncHUD(true);
+    });
+    modifierOptions.appendChild(card);
+  }
+  modifierPicker.classList.remove('hidden');
+}
 
 rolesBtn.addEventListener('click', showRolesPanel);
 rolesDone.addEventListener('click', hideRolesPanel);
@@ -265,6 +300,7 @@ rolesPanel.addEventListener('click', (e) => {
 overlayBtn.addEventListener('click', () => {
   restartRun(state);
   syncHUD(true);
+  showModifierPicker();
 });
 
 document.addEventListener('visibilitychange', () => {

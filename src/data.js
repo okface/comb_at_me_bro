@@ -140,3 +140,77 @@ export const ROLES = {
 };
 
 export const ROLE_ORDER = ['striker', 'forager', 'nurse', 'guard', 'architect'];
+
+// ============================================================
+// Hive Conditions — run-start modifiers that bias every build.
+// Player picks 1 of 3 (random subset) at the start of each run.
+// Each effect knob is consulted by helpers in game.js.
+// ============================================================
+export const MODIFIERS = [
+  {
+    id: 'plentiful_bloom',
+    name: 'Plentiful Bloom',
+    summary: '+0.5 base 🍯/s · Strikers cost +35%',
+    flavor: 'Wildflowers cover the fields. Honey flows freely — but stinging out is costly.',
+    pushes: 'greed / late-aggro',
+    effects: {
+      foragerBaseHoneyPerSec: 0.5,
+      roleCostMul: { striker: 1.35 },
+    },
+  },
+  {
+    id: 'steel_comb',
+    name: 'Steel Comb',
+    summary: '+35 max HP · Foragers −25%',
+    flavor: 'Old queens built thick walls. The wax is strong but the flowers wilt.',
+    pushes: 'turtle / fortress',
+    effects: {
+      hiveStartHPBonus: 35,
+      foragerHoneyMul: 0.75,
+    },
+  },
+  {
+    id: 'eager_stingers',
+    name: 'Eager Stingers',
+    summary: 'Strikers +1 bonus bee/rank · Architects cost +50%',
+    flavor: 'Your bees are restless. They strike hard but can\'t sit still to build.',
+    pushes: 'aggro / swarm',
+    effects: {
+      strikerPerRankBonus: 1,
+      roleCostMul: { architect: 1.5 },
+    },
+  },
+  {
+    id: 'patient_queen',
+    name: 'Patient Queen',
+    summary: 'All role costs −18% · +1 hornet per wave',
+    flavor: 'You wait. You build. You will outlast them, even if more come.',
+    pushes: 'balanced / wide',
+    effects: {
+      allRoleCostMul: 0.82,
+      extraHornetsPerWave: 1,
+    },
+  },
+  {
+    id: 'royal_drought',
+    name: 'Royal Drought',
+    summary: 'Wave rewards +50% 🍯 · honey cap halved',
+    flavor: 'Lean times. Each clear pays well, but you can\'t hoard.',
+    pushes: 'rhythm / spend-it-all',
+    effects: {
+      waveHoneyMul: 1.5,
+      honeyCapMul: 0.5,
+    },
+  },
+  {
+    id: 'lucky_larvae',
+    name: 'Lucky Larvae',
+    summary: '+1 larva per wave · every hornet has +1 HP',
+    flavor: 'The brood is robust. So are the intruders.',
+    pushes: 'larvae-economy',
+    effects: {
+      waveLarvaeBonus: 1,
+      hornetHPBonus: 1,
+    },
+  },
+];

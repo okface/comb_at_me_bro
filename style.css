@@ -452,6 +452,115 @@ html, body {
   min-width: 140px;
 }
 
+/* ============================================================
+   Modifier picker (Hive Condition)
+   ============================================================ */
+.picker-card {
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  padding: 24px 20px 22px;
+  width: 92%;
+  max-width: 380px;
+  max-height: 92vh;
+  overflow-y: auto;
+  text-align: center;
+  position: relative;
+  box-shadow: 0 10px 0 rgba(58, 40, 24, 0.3);
+}
+
+.picker-card::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border: 1px solid var(--ink);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.picker-title {
+  font-family: Georgia, 'Fraunces', serif;
+  font-weight: 600;
+  font-size: 24px;
+  margin: 0 0 6px;
+  color: var(--ink);
+  transform: rotate(-1deg);
+  display: inline-block;
+}
+
+.picker-sub {
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--ink-soft);
+  margin: 0 0 22px;
+}
+
+.modifier-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: left;
+}
+
+.modifier-card {
+  border: 1.5px solid var(--ink);
+  background: var(--paper-2, #E8DCBF);
+  padding: 14px;
+  cursor: pointer;
+  transition: transform 0.1s ease, background 0.12s, box-shadow 0.12s;
+  box-shadow: 0 3px 0 rgba(58, 40, 24, 0.25);
+  pointer-events: auto;
+}
+
+.modifier-card:hover { background: var(--paper); }
+.modifier-card:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 rgba(58, 40, 24, 0.25);
+}
+
+.modifier-card .mod-name {
+  font-family: Georgia, 'Fraunces', serif;
+  font-size: 17px;
+  font-weight: 600;
+  margin: 0 0 6px;
+  color: var(--ink);
+}
+
+.modifier-card .mod-summary {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--honey-deep, #B66B1E);
+  margin: 0 0 6px;
+}
+
+.modifier-card .mod-flavor {
+  font-size: 10.5px;
+  color: var(--ink-soft);
+  font-style: italic;
+  line-height: 1.5;
+  margin: 0 0 8px;
+}
+
+.modifier-card .mod-pushes {
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin: 0;
+}
+
+/* HUD modifier tag */
+.modifier-tag {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 4px 8px;
+  border-radius: 2px;
+  font-weight: 700;
+  text-shadow: none !important;
+}
+
 #overlay {
   position: absolute;
   inset: 0;

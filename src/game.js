@@ -1,7 +1,7 @@
 // Phase B1 game logic — multi-wave runner with idle/active phases.
 // Single-file for now; will split into game/ submodules in Phase B2+.
 
-import { HIVE, HORNET, STRIKER, ECONOMY, ROLES, ROLE_ORDER, generateWave, TOTAL_WAVES } from './data.js?v=__VERSION__';
+import { HIVE, HORNET, STRIKER, ECONOMY, ROLES, ROLE_ORDER, MODIFIERS, generateWave, TOTAL_WAVES } from './data.js?v=__VERSION__';
 
 export function createState(width, height) {
   const roles = {};
@@ -33,13 +33,56 @@ export function createState(width, height) {
     larvae: ECONOMY.startLarvae,
     honeyCap: ECONOMY.honeyStorageCap,
     roles,                  // { striker: {rank: 0}, ... }
+    // run modifier (Hive Condition)
+    modifier: null,         // populated by setModifier; null => baseline
   };
+}
+
+// ----------------------------------------------------------------------------
+// Modifier helpers
+// ----------------------------------------------------------------------------
+export function pickModifierOptions(count = 3) {
+  // Return a random subset of MODIFIERS — used by main.js for the picker.
+  const pool = [...MODIFIERS];
+  const out = [];
+  while (out.length < count && pool.length) {
+    const i = Math.floor(Math.random() * pool.length);
+    out.push(pool.splice(i, 1)[0]);
+  }
+  return out;
+}
+
+export function setModifier(state, modId) {
+  state.modifier = MODIFIERS.find(m => m.id === modId) || null;
+  // apply HP and storage cap deltas immediately
+  applyModifierStartingValues(state);
+  applyRoleEffectsToHive(state);
+}
+
+function applyModifierStartingValues(state) {
+  const eff = state.modifier?.effects || {};
+  // hive HP bonus
+  const hpBonus = eff.hiveStartHPBonus || 0;
+  state.hive.maxHP = HIVE.startHP + hpBonus;
+  state.hive.hp = state.hive.maxHP;
+  // honey cap multiplier
+  state.honeyCap = ECONOMY.honeyStorageCap * (eff.honeyCapMul ?? 1);
 }
 
 export function startNextWave(state) {
   if (state.phase !== 'idle') return;
   state.wave += 1;
   state.currentWave = generateWave(state.wave);
+  // modifier: add extra hornets to this wave, distributed near the end
+  const extra = state.modifier?.effects?.extraHornetsPerWave || 0;
+  if (extra > 0) {
+    const baseDur = state.currentWave.spawns.length > 0
+      ? state.currentWave.spawns[state.currentWave.spawns.length - 1].t
+      : 20;
+    for (let i = 0; i < extra; i++) {
+      state.currentWave.spawns.push({ type: 'hornet', t: baseDur + 1.5 + i * 1.2 });
+    }
+  }
   state.spawnIdx = 0;
   state.elapsed = 0;
   state.strikerCooldown = 0;
@@ -65,6 +108,7 @@ export function restartRun(state) {
   state.honey = ECONOMY.startHoney;
   state.larvae = ECONOMY.startLarvae;
   state.honeyCap = ECONOMY.honeyStorageCap;
+  state.modifier = null;
   for (const k of ROLE_ORDER) state.roles[k].rank = 0;
 }
 
@@ -75,7 +119,12 @@ export function getRoleNextCost(state, key) {
   const role = ROLES[key];
   const cur = state.roles[key].rank;
   if (cur >= role.maxRank) return null;
-  return role.costs[cur];
+  let cost = role.costs[cur];
+  const eff = state.modifier?.effects || {};
+  // per-role multiplier first, then global
+  const perRole = eff.roleCostMul?.[key] ?? 1;
+  const allMul = eff.allRoleCostMul ?? 1;
+  return Math.max(1, Math.round(cost * perRole * allMul));
 }
 
 export function canInvest(state, key) {
@@ -95,10 +144,12 @@ export function investRole(state, key) {
 // Architects raise the hive's max HP and honey cap. Re-apply any time
 // architect rank changes (or on wave start) to keep these in sync.
 function applyRoleEffectsToHive(state) {
+  const eff = state.modifier?.effects || {};
   const archRank = state.roles.architect.rank;
-  const newMaxHP = HIVE.startHP + archRank * ROLES.architect.perRankHiveHP;
-  const newCap = ECONOMY.honeyStorageCap + archRank * ROLES.architect.perRankStorage;
-  // when max HP grows, give the player the bonus immediately
+  const hpBonusFromMod = eff.hiveStartHPBonus || 0;
+  const newMaxHP = HIVE.startHP + hpBonusFromMod + archRank * ROLES.architect.perRankHiveHP;
+  const baseCap = ECONOMY.honeyStorageCap * (eff.honeyCapMul ?? 1);
+  const newCap = baseCap + archRank * ROLES.architect.perRankStorage;
   const hpDelta = newMaxHP - state.hive.maxHP;
   state.hive.maxHP = newMaxHP;
   state.hive.hp = Math.min(state.hive.maxHP, state.hive.hp + Math.max(0, hpDelta));
@@ -107,11 +158,17 @@ function applyRoleEffectsToHive(state) {
 }
 
 export function getEffectiveSwarmCount(state) {
-  return STRIKER.swarmCount + state.roles.striker.rank * ROLES.striker.perRankSwarmBonus;
+  const eff = state.modifier?.effects || {};
+  const perRankBonus = ROLES.striker.perRankSwarmBonus + (eff.strikerPerRankBonus || 0);
+  return STRIKER.swarmCount + state.roles.striker.rank * perRankBonus;
 }
 
 export function getForagerHoneyPerSec(state) {
-  return state.roles.forager.rank * ROLES.forager.perRankHoneyPerSec;
+  const eff = state.modifier?.effects || {};
+  const fromRank = state.roles.forager.rank * ROLES.forager.perRankHoneyPerSec;
+  const baseFromMod = eff.foragerBaseHoneyPerSec || 0;
+  const mul = eff.foragerHoneyMul ?? 1;
+  return (fromRank + baseFromMod) * mul;
 }
 
 export function getNurseLarvaeBonus(state) {
@@ -250,9 +307,10 @@ export function updateState(state, dt) {
   const allSpawned = state.spawnIdx >= state.currentWave.spawns.length;
   const liveCount = state.attackers.filter(a => a.deathT == null).length;
   if (allSpawned && liveCount === 0) {
-    // wave-clear reward
-    const honeyReward = ECONOMY.waveClearHoney;
-    const larvaeReward = ECONOMY.waveClearLarvae + getNurseLarvaeBonus(state);
+    // wave-clear reward (modifier-aware)
+    const eff = state.modifier?.effects || {};
+    const honeyReward = Math.round(ECONOMY.waveClearHoney * (eff.waveHoneyMul ?? 1));
+    const larvaeReward = ECONOMY.waveClearLarvae + getNurseLarvaeBonus(state) + (eff.waveLarvaeBonus || 0);
     state.honey = Math.min(state.honeyCap, state.honey + honeyReward);
     state.larvae += larvaeReward;
     state.fx.push({
@@ -282,16 +340,15 @@ function advanceLeftoverFx(state, dt) {
 function spawnHornet(state) {
   const margin = 40;
   const x = margin + Math.random() * (state.width - margin * 2);
+  const hpBonus = state.modifier?.effects?.hornetHPBonus || 0;
   state.attackers.push({
     type: 'hornet',
     x,
     y: -20,
-    hp: HORNET.hp,
+    hp: HORNET.hp + hpBonus,
     deathT: null,
     flutterPhase: Math.random() * Math.PI * 2, // wing buzz offset
   });
-  // brief spawn warning chevron at the top edge instead of a constant
-  // background pulse — addresses the "flashing dark gradient" complaint.
   state.fx.push({ kind: 'spawn-warn', x, y: 18, t: 0, life: 0.9 });
 }
 
