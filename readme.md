@@ -24,18 +24,24 @@ The game is fully playable end-to-end with one map, ten waves, four enemy types,
 
 | Phase | Scope | Status |
 |---|---|---|
-| **A — Skeleton** | Canvas + game loop + hive + hornets + striker swarm + HP + win/lose | ✅ done |
-| **B1 — Multi-wave** | Wave runner, ready button, banners, restart loop | ✅ done |
-| **B2.1 — Currency** | Honey + larvae state, HUD pills, wave-clear rewards | ✅ done |
-| **B2.2 — Roles panel** | 5 investable roles (rank 1-3), spend honey, role effects | ✅ done |
-| **B2.3 — Hive Conditions** | 6 run modifiers picked at run start | ✅ done |
-| **B2.4 — Spiders + 10 waves** | Second attacker type, longer run | ✅ done |
-| **B2.5 — Boons + pop cap** | 10 mid-run boons, Striker–Nurse cap link | ✅ done |
-| **B2.6 — Bears + Beekeeper** | Bear minibosses (waves 6-9), Beekeeper boss with smoke at wave 10 | ✅ done |
-| **B2.7 — Tap to prioritize** | Active player input — tap an enemy to focus strikers | ✅ done |
-| **B2.8 — Pacing + game feel** | Faster early waves, screen shake, wave-clear HP regen | ✅ done |
-| **B2.9 — Text + tutorial** | UX text pass, How-To-Play panel on title | ✅ done |
-| **C — Polish & meta** | Hidden synergies, royal jelly, rank 4-5 unlocks, run summary, Royal Memory persistence | next |
+| **A — Skeleton** | Canvas + game loop + hive + hornets + striker swarm + HP + win/lose | ✅ |
+| **B1 — Multi-wave** | Wave runner, ready button, banners, restart loop | ✅ |
+| **B2.1 — Currency** | Honey + larvae state, HUD pills, wave-clear rewards | ✅ |
+| **B2.2 — Roles panel** | 5 investable roles, spend honey, role effects | ✅ |
+| **B2.3 — Hive Conditions** | 6 run modifiers picked at run start | ✅ |
+| **B2.4 — Spiders + 10 waves** | Second attacker type, longer run | ✅ |
+| **B2.5 — Boons + pop cap** | 10 mid-run boons, Striker–Nurse cap link | ✅ |
+| **B2.6 — Bears + Beekeeper** | Bear minibosses, Beekeeper boss finale with smoke AoE | ✅ |
+| **B2.7 — Tap to prioritize** | Active player input — tap an enemy to focus strikers | ✅ |
+| **B2.8 — Pacing + game feel** | Faster early waves, screen shake, wave-clear HP regen | ✅ |
+| **B2.9 — Text + tutorial** | UX text pass, How-To-Play panel on title | ✅ |
+| **B2.10 — Hidden synergies** | 3 auto-firing rank-stack synergies with toast announcements | ✅ |
+| **B3.0 — Specializations** | Rank-3 forks every role into 2 paths that transform mechanics; transformative boons | ✅ |
+| **B3.1 — Visual richness** | Hex-tiled hive body, propolis stones, role-typed colony bees, wildflowers | ✅ |
+| **B3.2 — Active ability** | **Rally Hum** — tap-to-cast buff that scales with role investments | ✅ |
+| **B3.3 — Wave preview** | "Scout · wave N" preview between waves; Rally cost/CD tuned for scarcity | ✅ |
+| **B3.4 — Field density** | 25 wildflowers across whole field, leaves, vertical depth gradient | ✅ |
+| **C — Polish & meta** | Royal jelly, rank 4-5 unlocks, run summary, Royal Memory persistence | next |
 | **D — Real art** | Drop in Claude Design assets, animations, audio | future |
 
 ---
@@ -54,7 +60,7 @@ The game is fully playable end-to-end with one map, ten waves, four enemy types,
 | Run modifier | One of six **Hive Conditions** picked at run start |
 | In-run boons | One of three picked after waves 3 and 6 |
 | Damage model | Hive HP; attackers reaching the door deal DoT |
-| Active input | Tap any enemy during combat to focus strikers on it |
+| Active input | Tap an enemy to focus strikers + tap **Rally Hum** to burst-buff your strikers |
 | Win condition | Survive wave 10 (Beekeeper boss with smoke AoE) |
 | Visual style | Style B · Hand-Drawn / Wild Nest (Claude Design v1) |
 | Palette | sage, honey, rust, ink, paper — full 20-token palette in `data.js` |
