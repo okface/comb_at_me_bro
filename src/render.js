@@ -90,9 +90,18 @@ function drawDefensivePerimeter(ctx, state) {
 // Layer 3 — attackers
 // ============================================================================
 function drawAttackers(ctx, state) {
+  // Smoke clouds are drawn before sprites so bees fade *into* the cloud,
+  // and an unfortunate visual order doesn't overlay sprites on top of smoke.
   for (const a of state.attackers) {
-    if (a.type === 'hornet')      drawHornet(ctx, a, state.elapsed);
-    else if (a.type === 'spider') drawSpider(ctx, a, state.elapsed);
+    if (a.type === 'beekeeper' && a.deathT == null && a.smokeOnFor > 0) {
+      drawSmokeAoE(ctx, a, state.elapsed);
+    }
+  }
+  for (const a of state.attackers) {
+    if (a.type === 'hornet')         drawHornet(ctx, a, state.elapsed);
+    else if (a.type === 'spider')    drawSpider(ctx, a, state.elapsed);
+    else if (a.type === 'bear')      drawBear(ctx, a, state.elapsed);
+    else if (a.type === 'beekeeper') drawBeekeeper(ctx, a, state.elapsed);
   }
 }
 
@@ -244,6 +253,216 @@ function drawSpider(ctx, a, elapsed) {
     ctx.beginPath();
     ctx.arc(0, 0, 24, 0, Math.PI * 2);
     ctx.fill();
+  }
+
+  ctx.restore();
+}
+
+// Bear — boss-tier, ~52px diameter. Honey-dark body, rust spots, simple face.
+function drawBear(ctx, a, elapsed) {
+  ctx.save();
+  ctx.translate(a.x, a.y);
+
+  if (a.deathT != null) {
+    const k = Math.min(1, a.deathT / 0.6);
+    ctx.globalAlpha = 1 - k;
+    ctx.scale(1 - k * 0.4, 1 - k * 0.4);
+    ctx.rotate(k * 0.7);
+  } else {
+    // cb-bob-s (slow, big amplitude)
+    const bob = Math.sin(elapsed * 1.8 + a.bobPhase) * 1.6;
+    ctx.translate(0, bob);
+  }
+
+  // shadow
+  ctx.fillStyle = 'rgba(58, 40, 24, 0.30)';
+  ctx.beginPath();
+  ctx.ellipse(0, 22, 28, 5, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // body — big honey-dark oval
+  ctx.fillStyle = PALETTE.honeyDark;
+  drawEllipse(ctx, 0, 0, 24, 20);
+  ctx.strokeStyle = PALETTE.ink;
+  ctx.lineWidth = 2.2;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, 24, 20, 0, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // spots
+  ctx.fillStyle = PALETTE.rustDark;
+  drawEllipse(ctx, -10, -6, 4, 3);
+  drawEllipse(ctx, 10, -3, 4, 3);
+  drawEllipse(ctx, -4, 8, 3.5, 2.5);
+  drawEllipse(ctx, 13, 8, 3.5, 2.5);
+
+  // paws (front)
+  ctx.fillStyle = PALETTE.honeyDark;
+  drawEllipse(ctx, -16, 14, 7, 5);
+  drawEllipse(ctx,  16, 14, 7, 5);
+  ctx.strokeStyle = PALETTE.ink;
+  ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  ctx.ellipse(-16, 14, 7, 5, 0, 0, Math.PI * 2);
+  ctx.ellipse( 16, 14, 7, 5, 0, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // head — slightly smaller in front (down direction)
+  ctx.fillStyle = PALETTE.honeyDark;
+  drawEllipse(ctx, 0, 16, 11, 9);
+  ctx.strokeStyle = PALETTE.ink;
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  ctx.ellipse(0, 16, 11, 9, 0, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // ears — two small ovals at top of head
+  ctx.fillStyle = PALETTE.honeyDark;
+  drawEllipse(ctx, -7, 9, 3, 3);
+  drawEllipse(ctx,  7, 9, 3, 3);
+  ctx.strokeStyle = PALETTE.ink;
+  ctx.lineWidth = 1.0;
+  ctx.beginPath();
+  ctx.ellipse(-7, 9, 3, 3, 0, 0, Math.PI * 2);
+  ctx.ellipse( 7, 9, 3, 3, 0, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // eyes
+  ctx.fillStyle = PALETTE.ink;
+  drawEllipse(ctx, -3, 14, 1.3, 1.3);
+  drawEllipse(ctx,  3, 14, 1.3, 1.3);
+
+  // nose
+  ctx.fillStyle = PALETTE.ink;
+  ctx.beginPath();
+  ctx.moveTo(-1.5, 18);
+  ctx.lineTo(1.5, 18);
+  ctx.lineTo(0, 20);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.restore();
+}
+
+// Smoke AoE — wobbly grey cloud beneath the beekeeper, 95px radius
+function drawSmokeAoE(ctx, a, elapsed) {
+  const r = 95;
+  ctx.save();
+  ctx.translate(a.x, a.y);
+  // wobble: 3 layered ellipses with phase offsets and softening alpha
+  const layers = [
+    { off: 0,           alpha: 0.55, rad: r * 1.0, freq: 0.9 },
+    { off: 0.5 * Math.PI, alpha: 0.40, rad: r * 0.85, freq: 1.4 },
+    { off: 1.0 * Math.PI, alpha: 0.30, rad: r * 0.7, freq: 2.1 },
+  ];
+  for (const L of layers) {
+    const wobble = Math.sin(elapsed * L.freq + L.off) * 4;
+    ctx.fillStyle = PALETTE.smokeGrey;
+    ctx.globalAlpha = L.alpha;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, L.rad + wobble, L.rad * 0.85 + wobble, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // ink edge for hand-drawn feel
+  ctx.globalAlpha = 0.35;
+  ctx.strokeStyle = PALETTE.ink;
+  ctx.lineWidth = 1.4;
+  ctx.setLineDash([5, 6]);
+  ctx.beginPath();
+  ctx.ellipse(0, 0, r, r * 0.85, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+// Beekeeper — human boss, top-down. Paper body, paper veiled head, smoker arm.
+function drawBeekeeper(ctx, a, elapsed) {
+  ctx.save();
+  ctx.translate(a.x, a.y);
+
+  if (a.deathT != null) {
+    const k = Math.min(1, a.deathT / 0.6);
+    ctx.globalAlpha = 1 - k;
+    ctx.scale(1 - k * 0.5, 1 - k * 0.5);
+    ctx.rotate(k * 0.4);
+  } else {
+    const bob = Math.sin(elapsed * 1.4 + a.bobPhase) * 1.0;
+    ctx.translate(0, bob);
+  }
+
+  // shadow
+  ctx.fillStyle = 'rgba(58, 40, 24, 0.32)';
+  ctx.beginPath();
+  ctx.ellipse(0, 24, 22, 5, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // legs (two small paper rectangles)
+  ctx.fillStyle = PALETTE.paper;
+  ctx.strokeStyle = PALETTE.ink;
+  ctx.lineWidth = 1.4;
+  ctx.fillRect(-8, 8, 5, 14);
+  ctx.strokeRect(-8, 8, 5, 14);
+  ctx.fillRect(3, 8, 5, 14);
+  ctx.strokeRect(3, 8, 5, 14);
+
+  // body — paper rounded rectangle (drawn as two-pass)
+  ctx.fillStyle = PALETTE.paper;
+  drawEllipse(ctx, 0, 0, 14, 14);
+  ctx.beginPath();
+  ctx.ellipse(0, 0, 14, 14, 0, 0, Math.PI * 2);
+  ctx.lineWidth = 1.8;
+  ctx.stroke();
+
+  // smoker — small rectangle at left side, with handle dot
+  ctx.fillStyle = PALETTE.honeyDark;
+  ctx.fillRect(-22, -2, 8, 11);
+  ctx.strokeRect(-22, -2, 8, 11);
+  ctx.fillStyle = PALETTE.ink;
+  ctx.fillRect(-21, -5, 6, 4);
+  // smoker stem to body
+  ctx.strokeStyle = PALETTE.ink;
+  ctx.beginPath();
+  ctx.moveTo(-14, 4);
+  ctx.lineTo(-10, 4);
+  ctx.stroke();
+
+  // head/hat — paper circle slightly forward
+  ctx.fillStyle = PALETTE.paper;
+  drawEllipse(ctx, 0, 14, 10, 10);
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  ctx.ellipse(0, 14, 10, 10, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  // veil grid pattern on head
+  ctx.strokeStyle = PALETTE.ink;
+  ctx.lineWidth = 0.6;
+  for (let i = -8; i <= 8; i += 3) {
+    ctx.beginPath();
+    ctx.moveTo(i, 14 - 8);
+    ctx.lineTo(i, 14 + 8);
+    ctx.stroke();
+  }
+  for (let j = -8; j <= 8; j += 3) {
+    ctx.beginPath();
+    ctx.moveTo(-8, 14 + j);
+    ctx.lineTo(8, 14 + j);
+    ctx.stroke();
+  }
+
+  // smoke puff coming out of smoker top — small idle puffs
+  if (a.smokeOnFor > 0 || a.deathT != null) {
+    // active smoke — bigger puffs
+    const puffSize = a.smokeOnFor > 0 ? 6 : 3;
+    const wob = Math.sin(elapsed * 5) * 2;
+    ctx.fillStyle = PALETTE.smokeGrey;
+    ctx.globalAlpha = 0.7;
+    ctx.beginPath();
+    ctx.arc(-18, -8 + wob, puffSize, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(-21, -14 + wob, puffSize - 1, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
   }
 
   ctx.restore();

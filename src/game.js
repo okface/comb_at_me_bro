@@ -2,10 +2,22 @@
 // Single-file for now; will split into game/ submodules in Phase B2+.
 
 import {
-  HIVE, HORNET, SPIDER, STRIKER, ECONOMY, ROLES, ROLE_ORDER,
+  HIVE, HORNET, SPIDER, BEAR, BEEKEEPER, STRIKER,
+  ECONOMY, ROLES, ROLE_ORDER,
   MODIFIERS, BOONS, BOON_WAVES,
   generateWave, TOTAL_WAVES,
 } from './data.js?v=__VERSION__';
+
+// Look up the per-attacker config so we don't repeat type checks everywhere.
+function getAttackerCfg(type) {
+  switch (type) {
+    case 'hornet':    return HORNET;
+    case 'spider':    return SPIDER;
+    case 'bear':      return BEAR;
+    case 'beekeeper': return BEEKEEPER;
+    default:          return HORNET;
+  }
+}
 
 export function createState(width, height) {
   const roles = {};
@@ -305,15 +317,17 @@ export function updateState(state, dt) {
     wave.spawns[state.spawnIdx].t <= state.elapsed
   ) {
     const s = wave.spawns[state.spawnIdx++];
-    if (s.type === 'hornet') spawnHornet(state);
-    else if (s.type === 'spider') spawnSpider(state);
+    if (s.type === 'hornet')         spawnHornet(state);
+    else if (s.type === 'spider')     spawnSpider(state);
+    else if (s.type === 'bear')       spawnBear(state);
+    else if (s.type === 'beekeeper')  spawnBeekeeper(state);
   }
 
   // --- attackers home toward hive; guards damage anything in contact
   const guardDPS = getGuardContactDPS(state);
   for (const a of state.attackers) {
     if (a.deathT != null) { a.deathT += dt; continue; }
-    const cfg = a.type === 'spider' ? SPIDER : HORNET;
+    const cfg = getAttackerCfg(a.type);
     const dx = state.hive.x - a.x;
     const dy = state.hive.y - a.y;
     const d = Math.hypot(dx, dy) || 1;
@@ -321,9 +335,9 @@ export function updateState(state, dt) {
       a.x += (dx / d) * cfg.speed * dt;
       a.y += (dy / d) * cfg.speed * dt;
     } else {
-      state.hive.hp -= HIVE.contactDPS * dt;
+      state.hive.hp -= (cfg.contactDPS ?? HIVE.contactDPS) * dt;
       if (guardDPS > 0) {
-        a.hp -= guardDPS * dt;
+        a.hp -= guardDPS * (cfg.guardDmgMul ?? 1) * dt;
         if (a.hp <= 0 && a.deathT == null) {
           a.deathT = 0;
           state.fx.push({ kind: 'puff', x: a.x, y: a.y, t: 0, life: 0.55 });
@@ -334,6 +348,28 @@ export function updateState(state, dt) {
         state.phase = 'lost';
         showBanner(state, 'HIVE FALLEN', 4, 'lose');
         return;
+      }
+    }
+  }
+
+  // --- beekeeper smoke: emit a smoke cloud periodically; particles inside die
+  for (const a of state.attackers) {
+    if (a.type !== 'beekeeper' || a.deathT != null) continue;
+    a.smokeTimer = (a.smokeTimer ?? 0) - dt;
+    a.smokeOnFor = (a.smokeOnFor ?? 0) - dt;
+    if (a.smokeTimer <= 0) {
+      a.smokeOnFor = BEEKEEPER.smokeDuration;
+      a.smokeTimer = BEEKEEPER.smokeOnInterval;
+    }
+    if (a.smokeOnFor > 0) {
+      // kill swarm particles inside the smoke radius
+      for (const s of state.swarms) {
+        if (!s.alive) continue;
+        const sd = Math.hypot(s.x - a.x, s.y - a.y);
+        if (sd < BEEKEEPER.smokeRange) {
+          s.alive = false;
+          state.fx.push({ kind: 'puff', x: s.x, y: s.y, t: 0, life: 0.4 });
+        }
       }
     }
   }
@@ -479,6 +515,39 @@ function spawnSpider(state) {
     biteCD: SPIDER.biteCooldown * 0.5,
   });
   state.fx.push({ kind: 'spawn-warn', x, y: 18, t: 0, life: 0.9 });
+}
+
+function spawnBear(state) {
+  const margin = 70; // bears are big
+  const x = margin + Math.random() * (state.width - margin * 2);
+  state.attackers.push({
+    type: 'bear',
+    x,
+    y: -36,
+    hp: BEAR.hp,
+    deathT: null,
+    bobPhase: Math.random() * Math.PI * 2,
+  });
+  // bigger, scarier spawn warning for bears
+  state.fx.push({ kind: 'spawn-warn', x, y: 18, t: 0, life: 1.4 });
+  state.fx.push({ kind: 'spawn-warn', x: x - 18, y: 22, t: 0, life: 1.4 });
+  state.fx.push({ kind: 'spawn-warn', x: x + 18, y: 22, t: 0, life: 1.4 });
+}
+
+function spawnBeekeeper(state) {
+  const margin = 70;
+  const x = margin + Math.random() * (state.width - margin * 2);
+  state.attackers.push({
+    type: 'beekeeper',
+    x,
+    y: -38,
+    hp: BEEKEEPER.hp,
+    deathT: null,
+    bobPhase: Math.random() * Math.PI * 2,
+    smokeTimer: BEEKEEPER.smokeOnInterval * 0.5,  // first smoke a bit later
+    smokeOnFor: 0,
+  });
+  state.fx.push({ kind: 'spawn-warn', x, y: 18, t: 0, life: 1.6 });
 }
 
 function pickClosestLiveAttacker(state, fromX, fromY) {

@@ -50,10 +50,34 @@ export const SPIDER = {
   speed: 22,         // ~60% hornet speed
   radius: 13,
   contactRange: 56,
+  contactDPS: 8,
   // Spiders eat striker particles in close range — punishes "rush at it"
   // strategies and rewards Architects (walls) once those land.
   biteRange: 36,
-  biteCooldown: 0.55, // seconds between bites — limits crowd-eat
+  biteCooldown: 0.55,
+};
+
+export const BEAR = {
+  hp: 32,
+  speed: 18,         // slowest, but unstoppable
+  radius: 26,
+  contactRange: 70,
+  contactDPS: 14,    // hits the hive much harder
+  guardDmgMul: 0.4,  // guards barely scratch a bear
+};
+
+export const BEEKEEPER = {
+  hp: 70,
+  speed: 16,
+  radius: 24,
+  contactRange: 70,
+  contactDPS: 8,
+  guardDmgMul: 0.7,
+  // Smoke AoE: strikers entering the cloud die instantly. Rotates the
+  // tactical question from "stack DPS" to "wait for the gap."
+  smokeRange: 95,
+  smokeOnInterval: 6.0,  // seconds between smoke clouds
+  smokeDuration: 3.5,
 };
 
 export const STRIKER = {
@@ -72,27 +96,40 @@ export const STRIKER = {
 };
 
 // Procedural wave generator with attacker variety.
-// Hornets ramp continuously. Spiders intro at wave 4, scale up later.
-//   Wave 1: 5 hornets / 21s              (teaching loop)
-//   Wave 3: 9 hornets / 27s
-//   Wave 4: 10 hornets + 1 spider / 30s  (spider intro)
-//   Wave 7: 14 hornets + 3 spiders / 39s
-//   Wave 10: 18 hornets + 6 spiders / 48s
-//
-// Spawn timing is deterministic; spiders are interleaved at fixed offsets.
+//   Wave 1-3: hornets only (teaching loop)
+//   Wave 4: hornets + 1 spider (intro spiders)
+//   Wave 7: hornets + spiders + 1 bear (intro bears)
+//   Wave 8: hornets + spiders + 1 bear
+//   Wave 9: hornets + spiders + 2 bears
+//   Wave 10: BOSS — beekeeper with a few hornet escorts
 export function generateWave(n) {
+  // wave 10 is the boss — overrides default composition
+  if (n === 10) {
+    const spawns = [
+      { type: 'beekeeper', t: 1 },
+      { type: 'hornet', t: 5 },
+      { type: 'hornet', t: 9 },
+      { type: 'hornet', t: 14 },
+      { type: 'hornet', t: 18 },
+      { type: 'spider', t: 23 },
+      { type: 'hornet', t: 28 },
+    ];
+    return { spawns, duration: 50 };
+  }
+
   const hornetCount = 4 + Math.floor(n * 1.6);
-  const spiderCount = n >= 4 ? n - 3 : 0;  // 1 at wave 4, 6 at wave 9, 7 at wave 10
+  const spiderCount = n >= 4 ? n - 3 : 0;
+  const bearCount = n === 7 ? 1 : n === 8 ? 1 : n === 9 ? 2 : 0;
   const duration = 18 + n * 3;
   const spawns = [];
 
-  // hornets — evenly distributed across the wave
+  // hornets — evenly distributed
   const hornetStep = duration / Math.max(1, hornetCount);
   for (let i = 0; i < hornetCount; i++) {
     const jitter = i % 2 === 0 ? 0 : 0.6;
     spawns.push({ type: 'hornet', t: 1 + hornetStep * i + jitter });
   }
-  // spiders — scattered across the back half so they arrive late
+  // spiders — back half
   if (spiderCount > 0) {
     const spiderStep = (duration * 0.65) / Math.max(1, spiderCount);
     const spiderStart = duration * 0.30;
@@ -100,7 +137,14 @@ export function generateWave(n) {
       spawns.push({ type: 'spider', t: spiderStart + spiderStep * i });
     }
   }
-  // sort by time so the spawn loop reads them in order
+  // bears — single, dramatic, mid-wave
+  if (bearCount > 0) {
+    const bearStep = (duration * 0.55) / Math.max(1, bearCount);
+    const bearStart = duration * 0.40;
+    for (let i = 0; i < bearCount; i++) {
+      spawns.push({ type: 'bear', t: bearStart + bearStep * i });
+    }
+  }
   spawns.sort((a, b) => a.t - b.t);
   return { spawns, duration };
 }
