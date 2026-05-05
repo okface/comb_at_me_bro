@@ -122,6 +122,52 @@ html, body {
   animation: pill-flash 0.45s ease-out;
 }
 
+/* ============================================================
+   Wave preview — between waves, what's coming next
+   ============================================================ */
+.wave-preview {
+  background: var(--paper);
+  border: 1px solid var(--ink);
+  padding: 8px 12px;
+  font-size: 11px;
+  color: var(--ink);
+  border-radius: 2px;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  box-shadow: 0 2px 0 rgba(58, 40, 24, 0.18);
+}
+
+.wave-preview.hidden { display: none; }
+
+.wave-preview .wp-label {
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  font-weight: 700;
+}
+
+.wave-preview .wp-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 700;
+}
+
+.wave-preview .wp-glyph {
+  font-size: 14px;
+}
+
+.wave-preview .wp-duration {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--ink-soft);
+  font-weight: 400;
+}
+
 @keyframes pill-flash {
   0% { background: var(--honey, #F2C24A); transform: translateY(0); }
   40% { transform: translateY(-2px); }

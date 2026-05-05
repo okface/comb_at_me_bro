@@ -156,6 +156,16 @@ export function generateWave(n) {
 
 export const TOTAL_WAVES = 10; // B2.4 ships 10; final 30 with bear+beekeeper in Phase C.
 
+// Summary used by the next-wave preview card between waves.
+// Returns { counts: { hornet, spider, bear, beekeeper }, duration }.
+export function summarizeWave(n) {
+  if (n < 1 || n > TOTAL_WAVES) return null;
+  const wave = generateWave(n);
+  const counts = {};
+  for (const s of wave.spawns) counts[s.type] = (counts[s.type] || 0) + 1;
+  return { counts, duration: wave.duration };
+}
+
 // ============================================================
 // Phase B2 — economy + role investment
 // ============================================================
@@ -451,10 +461,12 @@ export const ABILITIES = {
     description: 'For a few seconds, your strikers fire and fly faster.',
     available: () => true,
 
-    // Honey cost — falls with Forager investment (15 → 9 at rank 3)
-    getHoneyCost: (state) => Math.max(6, 15 - (state.roles?.forager?.rank ?? 0) * 2),
-    // Cooldown — falls with Forager investment (8s → 5s at rank 3)
-    getCooldown: (state) => Math.max(3.5, 8 - (state.roles?.forager?.rank ?? 0) * 1),
+    // Honey cost — falls with Forager investment (20 → 14 at rank 3).
+    // Per fun-audit: scarcity creates decisions; pushed up from 15 baseline.
+    getHoneyCost: (state) => Math.max(10, 20 - (state.roles?.forager?.rank ?? 0) * 2),
+    // Cooldown — falls with Forager investment (12s → 9s at rank 3).
+    // Pushed up from 8s baseline so "press on cooldown" stops being optimal.
+    getCooldown: (state) => Math.max(7, 12 - (state.roles?.forager?.rank ?? 0) * 1),
     // Effect duration — grows with Striker investment (4s → 5.5s at rank 3)
     getDuration: (state) => 4 + (state.roles?.striker?.rank ?? 0) * 0.5,
     // Attack-speed multiplier on the striker cooldown (0.7 → 0.55 at striker rank 3)

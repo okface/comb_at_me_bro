@@ -11,7 +11,7 @@ import {
   getAvailableAbilities, getAbilityCost, canUseAbility, useAbility, isRallyActive,
 } from './game.js?v=__VERSION__';
 import { render } from './render.js?v=__VERSION__';
-import { ROLES, ROLE_ORDER, ABILITIES } from './data.js?v=__VERSION__';
+import { ROLES, ROLE_ORDER, ABILITIES, summarizeWave } from './data.js?v=__VERSION__';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -47,6 +47,7 @@ const boonOptions = document.getElementById('boon-options');
 let boonPickerScheduled = false;
 const abilityBar = document.getElementById('ability-bar');
 const abilityButtons = {}; // id -> { el, glyph, cost, cd }
+const wavePreview = document.getElementById('wave-preview');
 
 let state = null;
 let dpr = 1;
@@ -152,6 +153,42 @@ function buildAbilityButton(id) {
   };
 }
 
+// ============================================================================
+// Wave preview — between waves, show next wave's enemy composition
+// ============================================================================
+const ENEMY_GLYPHS = {
+  hornet:   { glyph: '🦂', name: 'hornet' },
+  spider:   { glyph: '🕷', name: 'spider' },
+  bear:     { glyph: '🐻', name: 'bear'   },
+  beekeeper:{ glyph: '🚬', name: 'beekeeper' },
+};
+
+function updateWavePreview() {
+  if (state.phase !== 'idle' || state.wave >= state.totalWaves) {
+    wavePreview.classList.add('hidden');
+    return;
+  }
+  const nextN = state.wave + 1;
+  const summary = summarizeWave(nextN);
+  if (!summary) {
+    wavePreview.classList.add('hidden');
+    return;
+  }
+  const parts = [];
+  for (const type of ['beekeeper', 'bear', 'spider', 'hornet']) {
+    if (summary.counts[type]) {
+      const g = ENEMY_GLYPHS[type] || { glyph: '?', name: type };
+      parts.push(`<span class="wp-row"><span class="wp-glyph">${g.glyph}</span>${summary.counts[type]} ${g.name}${summary.counts[type] > 1 ? 's' : ''}</span>`);
+    }
+  }
+  wavePreview.innerHTML = `
+    <span class="wp-label">scout · wave ${nextN}</span>
+    ${parts.join(' ')}
+    <span class="wp-duration">~${Math.round(summary.duration)}s</span>
+  `;
+  wavePreview.classList.remove('hidden');
+}
+
 function refreshAbilityButton(id) {
   const slot = abilityButtons[id];
   if (!slot) return;
@@ -183,6 +220,7 @@ function syncHUD(force = false) {
   // currency + HP + wave update every frame (cheap)
   updateCurrencyDisplay();
   updateAbilityBar();
+  updateWavePreview();
   hud.hp.textContent = `HP ${Math.ceil(state.hive.hp)} / ${state.hive.maxHP}`;
   hud.wave.textContent = state.wave === 0
     ? `WAVE 0 / ${state.totalWaves}`

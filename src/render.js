@@ -626,6 +626,23 @@ function drawHive(ctx, state) {
   const { hive } = state;
   const breath = 1 + 0.025 * Math.sin(hive.breathPhase * (Math.PI * 2 / 3));
   const r = hive.radius * breath;
+  const rallying = state.rallyEndsAt > state.elapsed;
+
+  // Rally aura — pulsing honey halo around hive
+  if (rallying) {
+    const haloPulse = 0.55 + 0.25 * Math.sin(state.elapsed * 8);
+    const haloR = r * 1.55;
+    ctx.save();
+    const haloGrad = ctx.createRadialGradient(hive.x, hive.y, r * 0.9, hive.x, hive.y, haloR);
+    haloGrad.addColorStop(0, `rgba(247, 221, 160, ${0.35 * haloPulse})`);
+    haloGrad.addColorStop(0.7, `rgba(242, 194, 74, ${0.18 * haloPulse})`);
+    haloGrad.addColorStop(1, 'rgba(242, 194, 74, 0)');
+    ctx.fillStyle = haloGrad;
+    ctx.beginPath();
+    ctx.arc(hive.x, hive.y, haloR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
 
   // shadow blob
   ctx.fillStyle = 'rgba(58, 40, 24, 0.30)';
@@ -1066,9 +1083,21 @@ function drawTinyBee(ctx, x, y, fluttPhase) {
 // Layer 5 — striker swarm particles (now small bees, not solid dots)
 // ============================================================================
 function drawSwarmParticles(ctx, state) {
+  const rallying = state.rallyEndsAt > state.elapsed;
   for (const s of state.swarms) {
     if (!s.alive) continue;
     const phase = (s.x + s.y) * 0.05 + state.elapsed * 22;
+    // Rally Hum aura under each particle — subtle honey glow
+    if (rallying && !s.meteor) {
+      ctx.save();
+      const a = 0.3 + 0.15 * Math.sin(state.elapsed * 14 + (s.x + s.y) * 0.07);
+      ctx.fillStyle = PALETTE.honeyLight;
+      ctx.globalAlpha = a;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
     if (s.meteor)      drawMeteorParticle(ctx, s, state.elapsed);
     else if (s.echo)   drawEchoParticle(ctx, s, phase);
     else               drawTinyBee(ctx, s.x, s.y, phase);
