@@ -15,6 +15,8 @@ const overlay = document.getElementById('overlay');
 const overlayTitle = document.getElementById('overlay-title');
 const overlaySub = document.getElementById('overlay-sub');
 const overlayBtn = document.getElementById('overlay-btn');
+const titleScreen = document.getElementById('title-screen');
+const titlePlay = document.getElementById('title-play');
 
 let state = null;
 let dpr = 1;
@@ -119,6 +121,10 @@ window.addEventListener('resize', () => fitCanvas());
 hud.ready.addEventListener('click', () => {
   startNextWave(state);
   syncHUD(true);
+});
+
+titlePlay.addEventListener('click', () => {
+  titleScreen.classList.add('hidden');
 });
 
 overlayBtn.addEventListener('click', () => {

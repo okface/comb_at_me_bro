@@ -108,6 +108,85 @@ html, body {
 
 .primary-btn.hidden { display: none; }
 
+/* ============================================================
+   Title screen
+   ============================================================ */
+.title-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(245, 235, 214, 0.55);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  padding: 32px 24px;
+}
+
+.title-overlay.hidden { display: none; }
+
+.title-card {
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  padding: 32px 28px;
+  text-align: center;
+  max-width: 94%;
+  width: 320px;
+  box-shadow: 0 10px 0 rgba(58, 40, 24, 0.3);
+  position: relative;
+}
+
+/* secondary wobbly border line for hand-drawn doubled-stroke feel */
+.title-card::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border: 1px solid var(--ink);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.title-eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin: 0 0 14px;
+}
+
+.title-name {
+  font-family: Georgia, 'Fraunces', serif;
+  font-weight: 600;
+  font-size: 36px;
+  line-height: 1.05;
+  margin: 0 0 14px;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  transform: rotate(-1.4deg);
+  display: inline-block;
+}
+
+.title-tagline {
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--ink-soft);
+  margin: 0 0 24px;
+}
+
+.title-foot {
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin: 18px 0 0;
+  opacity: 0.7;
+}
+
+#title-play {
+  min-width: 140px;
+}
+
 #overlay {
   position: absolute;
   inset: 0;
