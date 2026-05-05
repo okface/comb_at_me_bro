@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>Comb At Me Bro</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div id="stage">
+    <canvas id="game"></canvas>
+    <div id="hud">
+      <div class="hud-row top">
+        <span id="wave-label">WAVE 1 / 1</span>
+        <span id="hp-label">HP 100</span>
+      </div>
+      <div class="hud-row bottom">
+        <span id="status">PHASE A &middot; tap to start</span>
+      </div>
+    </div>
+    <div id="overlay" class="hidden">
+      <div class="overlay-card">
+        <h1 id="overlay-title">Game Over</h1>
+        <p id="overlay-sub">The hive has fallen.</p>
+        <button id="overlay-btn">Restart</button>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
