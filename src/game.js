@@ -4,7 +4,7 @@
 import {
   HIVE, HORNET, SPIDER, BEAR, BEEKEEPER, STRIKER,
   ECONOMY, ROLES, ROLE_ORDER,
-  MODIFIERS, BOONS, BOON_WAVES,
+  MODIFIERS, BOONS, BOON_WAVES, SYNERGIES, isSynergyActive,
   generateWave, TOTAL_WAVES,
 } from './data.js?v=__VERSION__';
 
@@ -58,7 +58,53 @@ export function createState(width, height) {
     priorityTarget: null,
     // screen shake intensity (decays each frame)
     shakeAmount: 0,
+    // synergy ids that have already announced this run
+    announcedSynergies: [],
+    // monotonic volley counter for synergies that key off it (Drone Frenzy)
+    volleyCount: 0,
   };
+}
+
+// Add honey, applying Sun-Soaked Comb overflow → HP conversion if active.
+function addHoney(state, amount) {
+  if (amount <= 0) return;
+  const total = state.honey + amount;
+  if (total <= state.honeyCap) {
+    state.honey = total;
+    return;
+  }
+  const overflow = total - state.honeyCap;
+  state.honey = state.honeyCap;
+  if (isSynergyActive(state, 'sun_soaked_comb')) {
+    const syn = SYNERGIES.find(s => s.id === 'sun_soaked_comb');
+    const hpGained = overflow / syn.overflowHPPer;
+    const before = state.hive.hp;
+    state.hive.hp = Math.min(state.hive.maxHP, state.hive.hp + hpGained);
+    const actual = state.hive.hp - before;
+    if (actual >= 0.5) {
+      state.fx.push({
+        kind: 'reward',
+        text: `+${actual.toFixed(0)}♥ overflow`,
+        x: state.width / 2, y: state.height * 0.62, t: 0, life: 1.4,
+      });
+    }
+  }
+}
+
+// Check every synergy; emit a one-time toast for any newly active.
+function checkSynergyActivations(state) {
+  for (const syn of SYNERGIES) {
+    if (syn.isActive(state) && !state.announcedSynergies.includes(syn.id)) {
+      state.announcedSynergies.push(syn.id);
+      state.fx.push({
+        kind: 'synergy',
+        name: syn.name,
+        desc: syn.description,
+        t: 0, life: 3.6,
+        x: state.width / 2, y: state.height * 0.32,
+      });
+    }
+  }
 }
 
 // Tap an attacker to mark it as priority — strikers will focus it.
@@ -155,6 +201,7 @@ export function applyBoon(state, boonId) {
   state.pendingBoonPick = false;
   // re-derive hive maxHP / honey cap (in case boon affects them)
   applyRoleEffectsToHive(state);
+  checkSynergyActivations(state);
   return true;
 }
 
@@ -202,6 +249,8 @@ export function restartRun(state) {
   state.pendingBoonPick = false;
   state.priorityTarget = null;
   state.shakeAmount = 0;
+  state.announcedSynergies = [];
+  state.volleyCount = 0;
   for (const k of ROLE_ORDER) state.roles[k].rank = 0;
 }
 
@@ -230,6 +279,7 @@ export function investRole(state, key) {
   state.honey -= cost;
   state.roles[key].rank += 1;
   applyRoleEffectsToHive(state);
+  checkSynergyActivations(state);
   return true;
 }
 
@@ -292,7 +342,13 @@ export function getNurseLarvaeBonus(state) {
 }
 
 export function getGuardContactDPS(state) {
-  return state.roles.guard.rank * ROLES.guard.perRankContactDPS;
+  let base = state.roles.guard.rank * ROLES.guard.perRankContactDPS;
+  // Murder Hallway synergy: +50% if Guards rank 3 + Architect rank 2+
+  if (isSynergyActive(state, 'murder_hallway')) {
+    const syn = SYNERGIES.find(s => s.id === 'murder_hallway');
+    base *= syn.guardDmgMul;
+  }
+  return base;
 }
 
 function showBanner(state, text, life, kind = 'wave-start') {
@@ -328,11 +384,9 @@ export function updateState(state, dt) {
 
   state.elapsed += dt;
 
-  // --- foragers tick honey (capped at storage)
+  // --- foragers tick honey (capped at storage; overflow may heal via synergy)
   const honeyTick = getForagerHoneyPerSec(state) * dt;
-  if (honeyTick > 0) {
-    state.honey = Math.min(state.honeyCap, state.honey + honeyTick);
-  }
+  if (honeyTick > 0) addHoney(state, honeyTick);
 
   // --- spawn from current wave script
   const wave = state.currentWave;
@@ -484,7 +538,7 @@ export function updateState(state, dt) {
     const larvaeReward = Math.max(0,
       ECONOMY.waveClearLarvae + getNurseLarvaeBonus(state) + (eff.waveLarvaeBonus || 0)
     );
-    state.honey = Math.min(state.honeyCap, state.honey + honeyReward);
+    addHoney(state, honeyReward);
     state.larvae += larvaeReward;
     // hive HP regen on wave clear (architects boost)
     const archRank = state.roles.architect.rank;
@@ -609,7 +663,20 @@ function launchSwarm(state, target) {
   const [waMin, waMax] = STRIKER.wobbleAmpRange;
   const [wfMin, wfMax] = STRIKER.wobbleFreqRange;
   const [smMin, smMax] = STRIKER.speedMulRange;
-  const swarmCount = getEffectiveSwarmCount(state);
+  state.volleyCount += 1;
+  let swarmCount = getEffectiveSwarmCount(state);
+  // Drone Frenzy synergy: every Nth volley is supersized
+  if (isSynergyActive(state, 'drone_frenzy')) {
+    const syn = SYNERGIES.find(s => s.id === 'drone_frenzy');
+    if (state.volleyCount % syn.everyN === 0) {
+      swarmCount = Math.ceil(swarmCount * syn.bonusMul);
+      state.fx.push({
+        kind: 'tap-ripple',
+        x: state.hive.x, y: state.hive.y - state.hive.radius * 0.3,
+        t: 0, life: 0.45, hit: true,
+      });
+    }
+  }
   for (let i = 0; i < swarmCount; i++) {
     const a = Math.random() * Math.PI * 2;
     const r = Math.random() * STRIKER.spreadRadius;

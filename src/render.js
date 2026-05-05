@@ -703,7 +703,58 @@ function drawFx(ctx, state) {
     else if (f.kind === 'spawn-warn')  drawFxSpawnWarn(ctx, f, k, state);
     else if (f.kind === 'reward')      drawFxReward(ctx, f, k);
     else if (f.kind === 'tap-ripple')  drawFxTapRipple(ctx, f, k);
+    else if (f.kind === 'synergy')     drawFxSynergy(ctx, f, k);
   }
+}
+
+// Synergy toast — eyebrow + name + description, slides in like a banner
+function drawFxSynergy(ctx, f, k) {
+  let alpha = 1;
+  let slideY = 0;
+  if (k < 0.15) {
+    const e = k / 0.15;
+    alpha = e; slideY = -30 * (1 - e);
+  } else if (k > 0.82) {
+    const e = (1 - k) / 0.18;
+    alpha = e; slideY = 20 * (1 - e);
+  }
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.translate(f.x, f.y + slideY);
+
+  // measure
+  ctx.font = '700 16px Georgia, "Fraunces", serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const nameWidth = ctx.measureText(f.name).width;
+  ctx.font = '500 11px Georgia, "Fraunces", serif';
+  const descWidth = ctx.measureText(f.desc).width;
+  const w = Math.max(nameWidth, descWidth) + 32;
+  const h = 60;
+
+  // shadow
+  ctx.fillStyle = 'rgba(58, 40, 24, 0.30)';
+  ctx.fillRect(-w/2 + 3, -h/2 + 4, w, h);
+  // card
+  ctx.fillStyle = PALETTE.honeyLight;
+  ctx.fillRect(-w/2, -h/2, w, h);
+  ctx.strokeStyle = PALETTE.ink;
+  ctx.lineWidth = 2;
+  ctx.strokeRect(-w/2, -h/2, w, h);
+  // eyebrow
+  ctx.fillStyle = PALETTE.honeyDark;
+  ctx.font = '700 9px ui-monospace, monospace';
+  ctx.fillText('SYNERGY', 0, -h/2 + 12);
+  // name
+  ctx.fillStyle = PALETTE.ink;
+  ctx.font = '700 16px Georgia, "Fraunces", serif';
+  ctx.fillText(f.name, 0, -2);
+  // description
+  ctx.fillStyle = PALETTE.inkSoft;
+  ctx.font = '500 11px Georgia, "Fraunces", serif';
+  ctx.fillText(f.desc, 0, h/2 - 12);
+
+  ctx.restore();
 }
 
 function drawFxTapRipple(ctx, f, k) {

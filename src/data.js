@@ -363,3 +363,42 @@ export const BOONS = [
 
 // Waves that grant a boon pick (after the wave clears)
 export const BOON_WAVES = [3, 6];
+
+// ============================================================
+// Hidden synergies — auto-activate when role rank thresholds align.
+// Each fires a one-time toast the first time it activates in a run,
+// then quietly applies its effect from then on.
+// ============================================================
+export const SYNERGIES = [
+  {
+    id: 'sun_soaked_comb',
+    name: 'Sun-Soaked Comb',
+    description: 'Honey that would overflow heals the hive instead.',
+    isActive: (state) =>
+      state.roles.architect.rank >= 3 && state.roles.forager.rank >= 3,
+    overflowHPPer: 5,  // 5 honey = 1 HP
+  },
+  {
+    id: 'murder_hallway',
+    name: 'Murder Hallway',
+    description: 'Guards strike harder behind thick wax.',
+    isActive: (state) =>
+      state.roles.guard.rank >= 3 && state.roles.architect.rank >= 2,
+    guardDmgMul: 1.5,
+  },
+  {
+    id: 'drone_frenzy',
+    name: 'Drone Frenzy',
+    description: 'Every fourth volley fires extra bees.',
+    isActive: (state) =>
+      state.roles.striker.rank >= 2 &&
+      state.roles.nurse.rank >= state.roles.striker.rank,
+    everyN: 4,
+    bonusMul: 1.5,
+  },
+];
+
+export function isSynergyActive(state, id) {
+  const syn = SYNERGIES.find(s => s.id === id);
+  return syn ? syn.isActive(state) : false;
+}
