@@ -84,6 +84,50 @@ html, body {
   opacity: 0.85;
 }
 
+.hud-stack { display: flex; flex-direction: column; gap: 8px; }
+
+.hud-row.currency {
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--paper);
+  border: 1px solid var(--ink);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: 0;
+  box-shadow: 0 2px 0 rgba(58, 40, 24, 0.18);
+}
+
+.pill .pill-glyph {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.pill .pill-cap {
+  font-weight: 400;
+  color: var(--ink-soft);
+  font-size: 11px;
+}
+
+/* visual flash when amount changes */
+.pill.flash {
+  animation: pill-flash 0.45s ease-out;
+}
+
+@keyframes pill-flash {
+  0% { background: var(--honey, #F2C24A); transform: translateY(0); }
+  40% { transform: translateY(-2px); }
+  100% { background: var(--paper); transform: translateY(0); }
+}
+
 .primary-btn {
   pointer-events: auto;
   background: var(--ink);

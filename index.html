@@ -13,9 +13,21 @@
   <div id="stage">
     <canvas id="game"></canvas>
     <div id="hud">
-      <div class="hud-row top">
-        <span id="wave-label">WAVE 1 / 1</span>
-        <span id="hp-label">HP 100</span>
+      <div class="hud-stack top-stack">
+        <div class="hud-row top">
+          <span id="wave-label">WAVE 1 / 5</span>
+          <span id="hp-label">HP 100</span>
+        </div>
+        <div class="hud-row currency">
+          <span class="pill" id="honey-pill">
+            <span class="pill-glyph">🍯</span>
+            <span id="honey-amount">50</span><span class="pill-cap">/<span id="honey-cap">250</span></span>
+          </span>
+          <span class="pill" id="larvae-pill">
+            <span class="pill-glyph">🐝</span>
+            <span id="larvae-amount">3</span>
+          </span>
+        </div>
       </div>
       <div class="hud-row bottom">
         <span id="status">tap READY to start</span>

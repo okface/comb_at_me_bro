@@ -358,10 +358,37 @@ function drawSwarmParticles(ctx, state) {
 function drawFx(ctx, state) {
   for (const f of state.fx) {
     const k = f.t / f.life;
-    if (f.kind === 'hit')        drawFxHitStars(ctx, f, k);
-    else if (f.kind === 'puff')   drawFxPuff(ctx, f, k);
-    else if (f.kind === 'spawn-warn') drawFxSpawnWarn(ctx, f, k, state);
+    if (f.kind === 'hit')             drawFxHitStars(ctx, f, k);
+    else if (f.kind === 'puff')        drawFxPuff(ctx, f, k);
+    else if (f.kind === 'spawn-warn')  drawFxSpawnWarn(ctx, f, k, state);
+    else if (f.kind === 'reward')      drawFxReward(ctx, f, k);
   }
+}
+
+// Floating reward text: rises ~50px while fading in then out (cb-rise)
+function drawFxReward(ctx, f, k) {
+  const alpha = k < 0.18 ? k / 0.18 : k > 0.75 ? (1 - k) / 0.25 : 1;
+  const rise = -k * 56;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.translate(f.x, f.y + rise);
+  ctx.font = '700 18px Georgia, "Fraunces", serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  // soft paper card behind
+  const m = ctx.measureText(f.text);
+  const w = m.width + 22;
+  const h = 28;
+  ctx.fillStyle = 'rgba(58, 40, 24, 0.18)';
+  ctx.fillRect(-w/2 + 2, -h/2 + 2, w, h);
+  ctx.fillStyle = PALETTE.paper;
+  ctx.fillRect(-w/2, -h/2, w, h);
+  ctx.strokeStyle = PALETTE.ink;
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(-w/2, -h/2, w, h);
+  ctx.fillStyle = PALETTE.ink;
+  ctx.fillText(f.text, 0, 0);
+  ctx.restore();
 }
 
 function drawFxHitStars(ctx, f, k) {

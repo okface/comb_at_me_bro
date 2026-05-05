@@ -1,9 +1,11 @@
 // Phase B1 game logic — multi-wave runner with idle/active phases.
 // Single-file for now; will split into game/ submodules in Phase B2+.
 
-import { HIVE, HORNET, STRIKER, generateWave, TOTAL_WAVES } from './data.js?v=__VERSION__';
+import { HIVE, HORNET, STRIKER, ECONOMY, ROLES, ROLE_ORDER, generateWave, TOTAL_WAVES } from './data.js?v=__VERSION__';
 
 export function createState(width, height) {
+  const roles = {};
+  for (const k of ROLE_ORDER) roles[k] = { rank: 0 };
   const hive = {
     x: width / 2,
     y: height - 130,
@@ -26,6 +28,11 @@ export function createState(width, height) {
     totalWaves: TOTAL_WAVES,
     currentWave: null,      // populated by startNextWave
     banner: null,           // { text, kind, t, life }
+    // economy
+    honey: ECONOMY.startHoney,
+    larvae: ECONOMY.startLarvae,
+    honeyCap: ECONOMY.honeyStorageCap,
+    roles,                  // { striker: {rank: 0}, ... }
   };
 }
 
@@ -44,6 +51,7 @@ export function startNextWave(state) {
 
 export function restartRun(state) {
   state.hive.hp = HIVE.startHP;
+  state.hive.maxHP = HIVE.startHP;
   state.attackers = [];
   state.swarms = [];
   state.fx = [];
@@ -54,6 +62,64 @@ export function restartRun(state) {
   state.wave = 0;
   state.currentWave = null;
   state.banner = null;
+  state.honey = ECONOMY.startHoney;
+  state.larvae = ECONOMY.startLarvae;
+  state.honeyCap = ECONOMY.honeyStorageCap;
+  for (const k of ROLE_ORDER) state.roles[k].rank = 0;
+}
+
+// ----------------------------------------------------------------------------
+// Role helpers (computed from current ranks)
+// ----------------------------------------------------------------------------
+export function getRoleNextCost(state, key) {
+  const role = ROLES[key];
+  const cur = state.roles[key].rank;
+  if (cur >= role.maxRank) return null;
+  return role.costs[cur];
+}
+
+export function canInvest(state, key) {
+  const cost = getRoleNextCost(state, key);
+  return cost != null && state.honey >= cost;
+}
+
+export function investRole(state, key) {
+  if (!canInvest(state, key)) return false;
+  const cost = getRoleNextCost(state, key);
+  state.honey -= cost;
+  state.roles[key].rank += 1;
+  applyRoleEffectsToHive(state);
+  return true;
+}
+
+// Architects raise the hive's max HP and honey cap. Re-apply any time
+// architect rank changes (or on wave start) to keep these in sync.
+function applyRoleEffectsToHive(state) {
+  const archRank = state.roles.architect.rank;
+  const newMaxHP = HIVE.startHP + archRank * ROLES.architect.perRankHiveHP;
+  const newCap = ECONOMY.honeyStorageCap + archRank * ROLES.architect.perRankStorage;
+  // when max HP grows, give the player the bonus immediately
+  const hpDelta = newMaxHP - state.hive.maxHP;
+  state.hive.maxHP = newMaxHP;
+  state.hive.hp = Math.min(state.hive.maxHP, state.hive.hp + Math.max(0, hpDelta));
+  state.honeyCap = newCap;
+  if (state.honey > state.honeyCap) state.honey = state.honeyCap;
+}
+
+export function getEffectiveSwarmCount(state) {
+  return STRIKER.swarmCount + state.roles.striker.rank * ROLES.striker.perRankSwarmBonus;
+}
+
+export function getForagerHoneyPerSec(state) {
+  return state.roles.forager.rank * ROLES.forager.perRankHoneyPerSec;
+}
+
+export function getNurseLarvaeBonus(state) {
+  return state.roles.nurse.rank * ROLES.nurse.perRankLarvaePerWave;
+}
+
+export function getGuardContactDPS(state) {
+  return state.roles.guard.rank * ROLES.guard.perRankContactDPS;
 }
 
 function showBanner(state, text, life, kind = 'wave-start') {
@@ -84,6 +150,12 @@ export function updateState(state, dt) {
 
   state.elapsed += dt;
 
+  // --- foragers tick honey (capped at storage)
+  const honeyTick = getForagerHoneyPerSec(state) * dt;
+  if (honeyTick > 0) {
+    state.honey = Math.min(state.honeyCap, state.honey + honeyTick);
+  }
+
   // --- spawn from current wave script
   const wave = state.currentWave;
   while (
@@ -94,7 +166,8 @@ export function updateState(state, dt) {
     if (s.type === 'hornet') spawnHornet(state);
   }
 
-  // --- attackers home toward hive
+  // --- attackers home toward hive; guards damage anything in contact
+  const guardDPS = getGuardContactDPS(state);
   for (const a of state.attackers) {
     if (a.deathT != null) { a.deathT += dt; continue; }
     const dx = state.hive.x - a.x;
@@ -104,7 +177,15 @@ export function updateState(state, dt) {
       a.x += (dx / d) * HORNET.speed * dt;
       a.y += (dy / d) * HORNET.speed * dt;
     } else {
+      // attacker reached the hive — both sides take damage
       state.hive.hp -= HIVE.contactDPS * dt;
+      if (guardDPS > 0) {
+        a.hp -= guardDPS * dt;
+        if (a.hp <= 0 && a.deathT == null) {
+          a.deathT = 0;
+          state.fx.push({ kind: 'puff', x: a.x, y: a.y, t: 0, life: 0.55 });
+        }
+      }
       if (state.hive.hp <= 0) {
         state.hive.hp = 0;
         state.phase = 'lost';
@@ -169,6 +250,15 @@ export function updateState(state, dt) {
   const allSpawned = state.spawnIdx >= state.currentWave.spawns.length;
   const liveCount = state.attackers.filter(a => a.deathT == null).length;
   if (allSpawned && liveCount === 0) {
+    // wave-clear reward
+    const honeyReward = ECONOMY.waveClearHoney;
+    const larvaeReward = ECONOMY.waveClearLarvae + getNurseLarvaeBonus(state);
+    state.honey = Math.min(state.honeyCap, state.honey + honeyReward);
+    state.larvae += larvaeReward;
+    state.fx.push({
+      kind: 'reward', text: `+${honeyReward}🍯  +${larvaeReward}🐝`,
+      x: state.width / 2, y: state.height * 0.5, t: 0, life: 2.0,
+    });
     if (state.wave >= state.totalWaves) {
       state.phase = 'won';
       showBanner(state, 'QUEEN VICTORIOUS', 5, 'win');
@@ -224,7 +314,8 @@ function launchSwarm(state, target) {
   const [waMin, waMax] = STRIKER.wobbleAmpRange;
   const [wfMin, wfMax] = STRIKER.wobbleFreqRange;
   const [smMin, smMax] = STRIKER.speedMulRange;
-  for (let i = 0; i < STRIKER.swarmCount; i++) {
+  const swarmCount = getEffectiveSwarmCount(state);
+  for (let i = 0; i < swarmCount; i++) {
     const a = Math.random() * Math.PI * 2;
     const r = Math.random() * STRIKER.spreadRadius;
     state.swarms.push({

@@ -10,7 +10,14 @@ const hud = {
   hp: document.getElementById('hp-label'),
   status: document.getElementById('status'),
   ready: document.getElementById('ready-btn'),
+  honeyAmount: document.getElementById('honey-amount'),
+  honeyCap: document.getElementById('honey-cap'),
+  honeyPill: document.getElementById('honey-pill'),
+  larvaeAmount: document.getElementById('larvae-amount'),
+  larvaePill: document.getElementById('larvae-pill'),
 };
+let prevHoneyDisplay = null;
+let prevLarvaeDisplay = null;
 const overlay = document.getElementById('overlay');
 const overlayTitle = document.getElementById('overlay-title');
 const overlaySub = document.getElementById('overlay-sub');
@@ -40,22 +47,43 @@ function init() {
   syncHUD(true);
 }
 
+function updateCurrencyDisplay() {
+  const honeyDisp = Math.floor(state.honey);
+  const larvaeDisp = state.larvae;
+  if (honeyDisp !== prevHoneyDisplay) {
+    hud.honeyAmount.textContent = honeyDisp;
+    if (prevHoneyDisplay != null && honeyDisp > prevHoneyDisplay + 4) {
+      // flash on noticeable gain (filters out the every-frame forager tick)
+      flashPill(hud.honeyPill);
+    }
+    prevHoneyDisplay = honeyDisp;
+  }
+  if (larvaeDisp !== prevLarvaeDisplay) {
+    hud.larvaeAmount.textContent = larvaeDisp;
+    if (prevLarvaeDisplay != null && larvaeDisp > prevLarvaeDisplay) {
+      flashPill(hud.larvaePill);
+    }
+    prevLarvaeDisplay = larvaeDisp;
+  }
+  hud.honeyCap.textContent = state.honeyCap;
+}
+
+function flashPill(el) {
+  el.classList.remove('flash');
+  void el.offsetWidth; // restart animation
+  el.classList.add('flash');
+}
+
 function syncHUD(force = false) {
   if (!state) return;
-  if (!force && state.phase === lastPhase) {
-    // still update dynamic numbers
-    hud.hp.textContent = `HP ${Math.ceil(state.hive.hp)}`;
-    hud.wave.textContent = state.wave === 0
-      ? `WAVE 0 / ${state.totalWaves}`
-      : `WAVE ${state.wave} / ${state.totalWaves}`;
-    return;
-  }
-  lastPhase = state.phase;
-
-  hud.hp.textContent = `HP ${Math.ceil(state.hive.hp)}`;
+  // currency + HP + wave update every frame (cheap)
+  updateCurrencyDisplay();
+  hud.hp.textContent = `HP ${Math.ceil(state.hive.hp)} / ${state.hive.maxHP}`;
   hud.wave.textContent = state.wave === 0
     ? `WAVE 0 / ${state.totalWaves}`
     : `WAVE ${state.wave} / ${state.totalWaves}`;
+  if (!force && state.phase === lastPhase) return;
+  lastPhase = state.phase;
 
   switch (state.phase) {
     case 'idle':

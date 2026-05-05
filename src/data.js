@@ -79,3 +79,64 @@ export function generateWave(n) {
 }
 
 export const TOTAL_WAVES = 5; // B1 ships 5; full 30 lands in Phase C.
+
+// ============================================================
+// Phase B2 — economy + role investment
+// ============================================================
+export const ECONOMY = {
+  startHoney: 50,
+  startLarvae: 3,
+  // bonus granted on wave clear (before B2.5's mutually-exclusive locks)
+  waveClearHoney: 25,
+  waveClearLarvae: 2,
+  honeyStorageCap: 250,  // raised by Architects (B2.4)
+};
+
+// Role definitions. Rank 0 = baseline (no investment).
+// Each rank in `costs` is the honey price to advance from that rank to the
+// next. costs[0] = price to buy rank 1, costs[1] = rank 1→2, etc.
+export const ROLES = {
+  forager: {
+    name: 'Forager',
+    glyph: '🍯',
+    description: 'Generates honey per second during waves.',
+    perRankHoneyPerSec: 0.6,
+    costs: [30, 65, 110],
+    maxRank: 3,
+  },
+  nurse: {
+    name: 'Nurse',
+    glyph: '🐝',
+    description: 'Produces extra larvae each wave clear.',
+    perRankLarvaePerWave: 1,
+    costs: [25, 55, 95],
+    maxRank: 3,
+  },
+  guard: {
+    name: 'Guard',
+    glyph: '🛡',
+    description: 'Damages intruders reaching the hive entrance.',
+    perRankContactDPS: 1.5,
+    costs: [40, 75, 130],
+    maxRank: 3,
+  },
+  striker: {
+    name: 'Striker',
+    glyph: '⚔',
+    description: 'Larger swarm volleys.',
+    perRankSwarmBonus: 2,
+    costs: [30, 65, 110],
+    maxRank: 3,
+  },
+  architect: {
+    name: 'Architect',
+    glyph: '⬡',
+    description: 'Reinforces hive HP and honey storage.',
+    perRankHiveHP: 25,
+    perRankStorage: 80,
+    costs: [50, 100, 170],
+    maxRank: 3,
+  },
+};
+
+export const ROLE_ORDER = ['striker', 'forager', 'nurse', 'guard', 'architect'];
