@@ -32,8 +32,8 @@ export const PALETTE = {
 };
 
 export const HIVE = {
-  startHP: 80,        // tightened from 100 — chip damage now matters
-  radius: 46,
+  startHP: 80,
+  radius: 64,         // bigger to support proper detail (was 46)
   contactDPS: 6,
 };
 

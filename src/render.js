@@ -11,7 +11,96 @@
 // Design references (in handoff bundle):
 //   project/cb/style.jsx, hive.jsx, bees.jsx, enemies.jsx, anim.jsx, vfx.jsx
 
-import { PALETTE } from './data.js?v=__VERSION__';
+import { PALETTE, ROLE_ORDER } from './data.js?v=__VERSION__';
+
+// ----------------------------------------------------------------------------
+// Wobbly hand-drawn helpers — fake the picture-book wobble without SVG turbulence
+// ----------------------------------------------------------------------------
+function wobblyEllipsePath(ctx, cx, cy, rx, ry, seed = 0, amplitude = 0.85, segments = 36) {
+  ctx.beginPath();
+  for (let i = 0; i <= segments; i++) {
+    const t = (i / segments) * Math.PI * 2;
+    const noise = (Math.sin(t * 5 + seed) * 0.55 +
+                   Math.cos(t * 8.7 + seed * 1.4) * 0.35 +
+                   Math.sin(t * 13.1 + seed * 2.7) * 0.20) * amplitude;
+    const x = cx + Math.cos(t) * (rx + noise);
+    const y = cy + Math.sin(t) * (ry + noise);
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+}
+
+function strokeWobblyDouble(ctx, drawFn) {
+  // Two passes — main stroke + lighter offset stroke for hand-drawn doubled-line feel
+  drawFn();
+  ctx.stroke();
+  ctx.save();
+  ctx.translate(0.6, -0.6);
+  ctx.globalAlpha *= 0.4;
+  drawFn();
+  ctx.stroke();
+  ctx.restore();
+}
+
+// Cached paper-texture sage tile and hex-comb fill pattern
+let _paperTile = null;
+function getPaperTile() {
+  if (_paperTile) return _paperTile;
+  const c = document.createElement('canvas');
+  c.width = 96; c.height = 96;
+  const x = c.getContext('2d');
+  x.fillStyle = PALETTE.sage;
+  x.fillRect(0, 0, 96, 96);
+  // sparse darker speckles
+  x.fillStyle = PALETTE.sageDeep;
+  for (let i = 0; i < 70; i++) {
+    const px = Math.floor(Math.random() * 96);
+    const py = Math.floor(Math.random() * 96);
+    x.globalAlpha = 0.18 + Math.random() * 0.22;
+    x.fillRect(px, py, 1, 1);
+  }
+  // a few faint micro-strokes
+  x.globalAlpha = 0.18;
+  x.strokeStyle = PALETTE.sageDark;
+  x.lineWidth = 0.6;
+  for (let i = 0; i < 14; i++) {
+    const px = Math.random() * 96;
+    const py = Math.random() * 96;
+    x.beginPath();
+    x.moveTo(px, py);
+    x.lineTo(px + 2 + Math.random() * 3, py - 1 - Math.random() * 2);
+    x.stroke();
+  }
+  _paperTile = c;
+  return _paperTile;
+}
+
+let _hexCombTile = null;
+function getHexCombTile() {
+  if (_hexCombTile) return _hexCombTile;
+  // 28×24 hex grid tile (pointy-top hexagons)
+  const tw = 28, th = 24;
+  const c = document.createElement('canvas');
+  c.width = tw; c.height = th;
+  const x = c.getContext('2d');
+  x.fillStyle = PALETTE.honey;
+  x.fillRect(0, 0, tw, th);
+  // ink hex outlines
+  x.strokeStyle = PALETTE.honeyDark;
+  x.lineWidth = 1;
+  x.globalAlpha = 0.55;
+  drawHex(x, tw / 2, th / 2, 9);
+  drawHex(x, 0,        0,         9);
+  drawHex(x, tw,       0,         9);
+  drawHex(x, 0,        th,        9);
+  drawHex(x, tw,       th,        9);
+  // center dot per cell for subtle depth
+  x.fillStyle = PALETTE.honeyDeep;
+  x.globalAlpha = 0.35;
+  x.fillRect(tw/2 - 1, th/2 - 1, 2, 2);
+  _hexCombTile = c;
+  return _hexCombTile;
+}
 
 // ============================================================================
 // Public entry
@@ -25,9 +114,12 @@ export function render(ctx, state) {
     ctx.translate(sx, sy);
   }
   drawField(ctx, state);
+  drawWildflowers(ctx, state);
+  drawHiveAccessories(ctx, state);
   if (state.phase === 'idle') drawDefensivePerimeter(ctx, state);
   drawAttackers(ctx, state);
   drawHive(ctx, state);
+  drawColonyBees(ctx, state);
   drawSwarmParticles(ctx, state);
   if (state.priorityTarget && state.priorityTarget.deathT == null) {
     drawPriorityReticle(ctx, state.priorityTarget, state.elapsed);
@@ -69,9 +161,30 @@ function drawPriorityReticle(ctx, target, elapsed) {
 // Layer 1 — field / grass / tufts
 // ============================================================================
 function drawField(ctx, state) {
-  ctx.fillStyle = PALETTE.sage;
+  // tile a paper-textured sage background
+  const tile = getPaperTile();
+  const pat = ctx.createPattern(tile, 'repeat');
+  ctx.fillStyle = pat || PALETTE.sage;
   ctx.fillRect(0, 0, state.width, state.height);
   drawGrassTufts(ctx, state.width, state.height);
+  drawGrassPath(ctx, state.width, state.height);
+}
+
+// A meandering ink trail leading up to the hive — gives the field intent
+function drawGrassPath(ctx, w, h) {
+  const cx = w / 2;
+  const baseY = h - 130;
+  ctx.save();
+  ctx.strokeStyle = PALETTE.sageDark;
+  ctx.lineWidth = 1.4;
+  ctx.globalAlpha = 0.35;
+  ctx.setLineDash([4, 7]);
+  ctx.beginPath();
+  ctx.moveTo(cx, 30);
+  ctx.bezierCurveTo(cx + 60, h * 0.35, cx - 50, h * 0.55, cx, baseY - 80);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
 }
 
 const TUFTS = [
@@ -511,100 +624,368 @@ function drawBeekeeper(ctx, a, elapsed) {
 // ============================================================================
 function drawHive(ctx, state) {
   const { hive } = state;
-  // breathing pulse — cb-breathe, 3s ease-in-out, scale 1 ↔ 1.03
-  const breath = 1 + 0.03 * Math.sin(hive.breathPhase * (Math.PI * 2 / 3));
+  const breath = 1 + 0.025 * Math.sin(hive.breathPhase * (Math.PI * 2 / 3));
   const r = hive.radius * breath;
 
-  // soft drop shadow
-  ctx.fillStyle = 'rgba(58, 40, 24, 0.22)';
+  // shadow blob
+  ctx.fillStyle = 'rgba(58, 40, 24, 0.30)';
   ctx.beginPath();
-  ctx.ellipse(hive.x, hive.y + r * 0.85, r * 1.05, r * 0.22, 0, 0, Math.PI * 2);
+  ctx.ellipse(hive.x, hive.y + r * 0.92, r * 1.15, r * 0.26, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // damage state — comb cracks at <50% HP
   const hpRatio = hive.hp / hive.maxHP;
 
   ctx.save();
   ctx.translate(hive.x, hive.y);
 
-  // honey-glow gradient body (radial: honeyLight center → honey → honeyDark edge)
-  const grad = ctx.createRadialGradient(0, -r * 0.2, 0, 0, 0, r);
+  // ─── BODY: honey-glow base (rich gradient) ───
+  const grad = ctx.createRadialGradient(0, -r * 0.3, r * 0.1, 0, 0, r * 1.05);
   grad.addColorStop(0, PALETTE.honeyLight);
-  grad.addColorStop(0.6, PALETTE.honey);
+  grad.addColorStop(0.45, PALETTE.honey);
+  grad.addColorStop(0.85, PALETTE.honeyDeep);
   grad.addColorStop(1, PALETTE.honeyDark);
-
-  // wobbly nest blob — slightly asymmetric ellipse
   ctx.fillStyle = grad;
-  ctx.beginPath();
-  ctx.ellipse(0, 2, r * 0.98, r * 0.88, 0, 0, Math.PI * 2);
+  wobblyEllipsePath(ctx, 0, 2, r * 0.98, r * 0.88, 11.7, 1.1);
   ctx.fill();
 
-  // ink outline (double-stroke for hand-drawn doubled-line feel)
-  ctx.strokeStyle = PALETTE.ink;
-  ctx.lineWidth = 2.4;
-  ctx.beginPath();
-  ctx.ellipse(0, 2, r * 0.98, r * 0.88, 0, 0, Math.PI * 2);
-  ctx.stroke();
+  // ─── HEX COMB CELLS — proper visible honeycomb tiling ───
+  ctx.save();
+  // clip to body shape so cells stay inside
+  wobblyEllipsePath(ctx, 0, 2, r * 0.94, r * 0.84, 11.7, 0.8);
+  ctx.clip();
+  drawCombGrid(ctx, r);
+  ctx.restore();
 
-  // honey drips from sides (small curved fills with ink stroke)
+  // ─── DRIPS — six wax drips around the perimeter ───
   ctx.fillStyle = PALETTE.honey;
   ctx.strokeStyle = PALETTE.ink;
   ctx.lineWidth = 1.6;
-  drawDrip(ctx, -r * 0.55, r * 0.55, -r * 0.45, r * 0.85);
-  drawDrip(ctx,  r * 0.55, r * 0.55,  r * 0.45, r * 0.85);
+  drawDrip(ctx, -r * 0.65,  r * 0.45, -r * 0.55,  r * 0.92);
+  drawDrip(ctx, -r * 0.20,  r * 0.78, -r * 0.10,  r * 1.05);
+  drawDrip(ctx,  r * 0.20,  r * 0.78,  r * 0.30,  r * 1.00);
+  drawDrip(ctx,  r * 0.65,  r * 0.45,  r * 0.55,  r * 0.92);
+  // smaller frozen drips on top
+  drawDrip(ctx, -r * 0.78,  r * 0.05, -r * 0.74,  r * 0.30);
+  drawDrip(ctx,  r * 0.78,  r * 0.05,  r * 0.74,  r * 0.30);
 
-  // hex comb hints inside (honeyDeep, 0.55 alpha, 7 small hexagons)
-  ctx.fillStyle = PALETTE.honeyDark;
-  ctx.globalAlpha = 0.55;
-  drawHex(ctx, -r * 0.30, -r * 0.20, r * 0.13);
-  drawHex(ctx,  r * 0.05, -r * 0.20, r * 0.13);
-  drawHex(ctx,  r * 0.40, -r * 0.05, r * 0.13);
-  drawHex(ctx, -r * 0.40,  r * 0.05, r * 0.12);
-  drawHex(ctx, -r * 0.10,  r * 0.05, r * 0.13);
-  drawHex(ctx,  r * 0.20,  r * 0.20, r * 0.12);
-  drawHex(ctx, -r * 0.25,  r * 0.30, r * 0.11);
-  ctx.globalAlpha = 1;
+  // ─── INK OUTLINE — wobbly double pass ───
+  ctx.strokeStyle = PALETTE.ink;
+  ctx.lineWidth = 2.4;
+  strokeWobblyDouble(ctx, () => {
+    wobblyEllipsePath(ctx, 0, 2, r * 0.98, r * 0.88, 11.7, 1.1);
+  });
 
-  // entrance — small dark ink ellipse with rust-dark inner
+  // ─── ENTRANCE — dark hole with rust gradient inner ───
   ctx.fillStyle = PALETTE.ink;
-  drawEllipse(ctx, 0, r * 0.55, r * 0.18, r * 0.10);
-  ctx.fillStyle = PALETTE.rustDark;
-  drawEllipse(ctx, 0, r * 0.50, r * 0.13, r * 0.07);
+  drawEllipse(ctx, 0, r * 0.55, r * 0.20, r * 0.11);
+  const eGrad = ctx.createRadialGradient(0, r * 0.55, 0, 0, r * 0.55, r * 0.18);
+  eGrad.addColorStop(0, PALETTE.rustDark);
+  eGrad.addColorStop(1, PALETTE.ink);
+  ctx.fillStyle = eGrad;
+  drawEllipse(ctx, 0, r * 0.52, r * 0.15, r * 0.08);
 
-  // damage cracks at <50% HP
+  // ─── DAMAGE: cracks at <50% HP ───
   if (hpRatio < 0.5) {
     ctx.strokeStyle = hpRatio < 0.25 ? PALETTE.redInk : PALETTE.ink;
     ctx.lineWidth = hpRatio < 0.25 ? 2.2 : 1.6;
     ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.moveTo(-r * 0.3, -r * 0.4);
-    ctx.lineTo(-r * 0.1, -r * 0.05);
-    ctx.lineTo(-r * 0.25, r * 0.2);
-    ctx.moveTo(r * 0.4, -r * 0.2);
-    ctx.lineTo(r * 0.15, r * 0.1);
-    ctx.moveTo(r * 0.05, -r * 0.55);
-    ctx.lineTo(r * 0.2, -r * 0.2);
+    ctx.moveTo(-r * 0.40, -r * 0.40);
+    ctx.lineTo(-r * 0.12, -r * 0.10);
+    ctx.lineTo(-r * 0.30,  r * 0.20);
+    ctx.moveTo( r * 0.45, -r * 0.30);
+    ctx.lineTo( r * 0.20,  r * 0.05);
+    ctx.lineTo( r * 0.30,  r * 0.30);
+    ctx.moveTo( r * 0.10, -r * 0.65);
+    ctx.lineTo( r * 0.18, -r * 0.30);
     ctx.stroke();
   }
-
-  // critical pulse outline at <25%
+  // critical: red pulse outline + flicker
   if (hpRatio < 0.25) {
     const pulseAlpha = 0.45 + 0.55 * Math.abs(Math.sin(hive.breathPhase * 4.5));
     ctx.save();
     ctx.globalAlpha = pulseAlpha;
     ctx.strokeStyle = PALETTE.redInk;
     ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.ellipse(0, 2, r * 1.02, r * 0.92, 0, 0, Math.PI * 2);
+    wobblyEllipsePath(ctx, 0, 2, r * 1.04, r * 0.94, 11.7, 0.8);
     ctx.stroke();
     ctx.restore();
   }
 
-  ctx.restore();
+  // ─── QUEEN HINT — tiny yellow dot at the entrance ───
+  if (hpRatio > 0.05) {
+    ctx.fillStyle = PALETTE.honey;
+    drawEllipse(ctx, 0, r * 0.50, 1.6, 1.6);
+  }
 
-  // 4 idle bees orbiting — only when not in combat (no live attackers)
-  const liveCount = state.attackers.filter(a => a.deathT == null).length;
-  if (liveCount === 0) drawOrbitingBees(ctx, hive);
+  ctx.restore();
+}
+
+// Hex comb cells inside the hive body. Pointy-top hex grid, multiple cells
+// with subtle alternating tones so the body reads as actual comb.
+function drawCombGrid(ctx, r) {
+  const cellR = r * 0.13;
+  const dx = cellR * Math.sqrt(3); // horizontal spacing for pointy-top
+  const dy = cellR * 1.5;
+  const yMin = -r * 0.85, yMax = r * 0.7;
+  const xMin = -r * 0.95, xMax = r * 0.95;
+  let row = 0;
+  for (let y = yMin; y <= yMax; y += dy) {
+    const offset = (row % 2) * (dx / 2);
+    for (let x = xMin; x <= xMax; x += dx) {
+      const cx = x + offset;
+      const cy = y;
+      // subtle tone variation
+      const tone = (row + Math.round(cx)) % 3;
+      ctx.fillStyle = tone === 0 ? PALETTE.honey
+                    : tone === 1 ? PALETTE.honeyLight
+                    :              PALETTE.honeyDeep;
+      ctx.globalAlpha = 0.55;
+      drawHex(ctx, cx, cy, cellR * 0.9);
+      // ink stroke
+      ctx.globalAlpha = 0.45;
+      ctx.strokeStyle = PALETTE.honeyDark;
+      ctx.lineWidth = 0.8;
+      drawHexStroke(ctx, cx, cy, cellR * 0.9);
+    }
+    row += 1;
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawHexStroke(ctx, cx, cy, size) {
+  ctx.beginPath();
+  for (let i = 0; i < 6; i++) {
+    const a = (Math.PI / 3) * i + Math.PI / 6;
+    const x = cx + Math.cos(a) * size;
+    const y = cy + Math.sin(a) * size;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  ctx.stroke();
+}
+
+// ============================================================================
+// Wildflowers — static decorative flowers scattered in the lower field
+// ============================================================================
+const FLOWER_POSITIONS = [
+  { x: 0.10, y: 0.74, c: 'jelly' },   { x: 0.22, y: 0.88, c: 'honey' },
+  { x: 0.34, y: 0.80, c: 'redInk' },  { x: 0.46, y: 0.93, c: 'jelly' },
+  { x: 0.62, y: 0.86, c: 'honey' },   { x: 0.74, y: 0.79, c: 'redInk' },
+  { x: 0.86, y: 0.92, c: 'jelly' },   { x: 0.92, y: 0.78, c: 'honey' },
+  { x: 0.06, y: 0.92, c: 'honey' },   { x: 0.55, y: 0.74, c: 'redInk' },
+];
+function drawWildflowers(ctx, state) {
+  const { width: w, height: h } = state;
+  for (const f of FLOWER_POSITIONS) {
+    const x = f.x * w;
+    const y = f.y * h;
+    drawFlower(ctx, x, y, PALETTE[f.c]);
+  }
+}
+function drawFlower(ctx, x, y, petalColor) {
+  // 5 petals + center + tiny stem
+  ctx.save();
+  ctx.translate(x, y);
+  // stem
+  ctx.strokeStyle = PALETTE.sageDark;
+  ctx.lineWidth = 1.1;
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(0, 5);
+  ctx.stroke();
+  // 5 petals
+  ctx.fillStyle = petalColor;
+  for (let i = 0; i < 5; i++) {
+    const a = (Math.PI * 2 / 5) * i - Math.PI / 2;
+    const px = Math.cos(a) * 2.6;
+    const py = Math.sin(a) * 2.6;
+    ctx.beginPath();
+    ctx.ellipse(px, py, 1.7, 2.2, a, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // ink outline halo
+  ctx.strokeStyle = PALETTE.ink;
+  ctx.lineWidth = 0.5;
+  for (let i = 0; i < 5; i++) {
+    const a = (Math.PI * 2 / 5) * i - Math.PI / 2;
+    const px = Math.cos(a) * 2.6;
+    const py = Math.sin(a) * 2.6;
+    ctx.beginPath();
+    ctx.ellipse(px, py, 1.7, 2.2, a, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  // center
+  ctx.fillStyle = PALETTE.honeyDark;
+  ctx.beginPath();
+  ctx.arc(0, 0, 1.2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+// ============================================================================
+// Hive accessories — propolis stones and small surface details around the hive base
+// ============================================================================
+function drawHiveAccessories(ctx, state) {
+  const { hive } = state;
+  // four small wax stones around the hive base
+  const stones = [
+    { x: -hive.radius * 1.45, y: hive.radius * 0.85, w: 14, h: 7 },
+    { x: -hive.radius * 0.7, y: hive.radius * 1.08, w: 10, h: 5 },
+    { x:  hive.radius * 0.7, y: hive.radius * 1.05, w: 12, h: 6 },
+    { x:  hive.radius * 1.45, y: hive.radius * 0.85, w: 14, h: 7 },
+  ];
+  for (const s of stones) {
+    ctx.save();
+    ctx.translate(hive.x + s.x, hive.y + s.y);
+    // shadow
+    ctx.fillStyle = 'rgba(58, 40, 24, 0.25)';
+    ctx.beginPath();
+    ctx.ellipse(0, s.h * 0.6, s.w, s.h * 0.4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // body
+    ctx.fillStyle = PALETTE.honeyDark;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, s.w, s.h, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // ink outline
+    ctx.strokeStyle = PALETTE.ink;
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+    // top highlight
+    ctx.fillStyle = PALETTE.honeyLight;
+    ctx.globalAlpha = 0.45;
+    ctx.beginPath();
+    ctx.ellipse(-s.w * 0.3, -s.h * 0.4, s.w * 0.5, s.h * 0.3, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+// ============================================================================
+// Colony bees — visible role-typed bees around the hive (one per role rank)
+// ============================================================================
+function drawColonyBees(ctx, state) {
+  const { hive } = state;
+  // collect all rank-units to draw, in role order
+  const units = [];
+  for (const key of ROLE_ORDER) {
+    const rank = state.roles[key].rank;
+    for (let i = 0; i < rank; i++) units.push(key);
+  }
+  if (units.length === 0) return;
+  // arrange them around the hive in an arc above and around the entrance
+  const baseR = hive.radius * 1.18;
+  const t = hive.breathPhase;
+  const total = units.length;
+  for (let i = 0; i < total; i++) {
+    // angle distribution: spread units across an arc 200° (top + sides),
+    // leaving the bottom open for the entrance + path
+    const startAngle = -Math.PI * 0.95;
+    const endAngle = -Math.PI * 0.05;
+    const a = total === 1
+      ? -Math.PI * 0.5
+      : startAngle + ((endAngle - startAngle) * i) / (total - 1);
+    // gentle bob per unit, phase-staggered
+    const bob = Math.sin(t * 1.4 + i * 0.7) * 1.6;
+    const r = baseR + Math.cos(t * 0.9 + i) * 1.2;
+    const x = hive.x + Math.cos(a) * r;
+    const y = hive.y + Math.sin(a) * r + bob;
+    drawColonyBee(ctx, x, y, units[i], t * 18 + i);
+  }
+}
+
+// One colony bee, role-typed. Drawn at ~18px scale so it's clearly visible.
+function drawColonyBee(ctx, x, y, role, fluttPhase) {
+  ctx.save();
+  ctx.translate(x, y);
+  // shadow
+  ctx.fillStyle = 'rgba(58, 40, 24, 0.20)';
+  ctx.beginPath();
+  ctx.ellipse(0, 5, 6, 1.6, 0, 0, Math.PI * 2);
+  ctx.fill();
+  // wings
+  const flutter = 0.55 + 0.45 * Math.abs(Math.sin(fluttPhase));
+  ctx.fillStyle = PALETTE.white;
+  ctx.globalAlpha = 0.78;
+  ctx.beginPath();
+  ctx.ellipse(-2.5, -2, 3.2, 2.0 * flutter, -0.4, 0, Math.PI * 2);
+  ctx.ellipse( 2.5, -2, 3.2, 2.0 * flutter,  0.4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  // body color by role
+  const bodyColor = (() => {
+    switch (role) {
+      case 'forager':   return PALETTE.honey;
+      case 'nurse':     return PALETTE.honeyLight;
+      case 'guard':     return PALETTE.honeyDeep;
+      case 'striker':   return PALETTE.honey;
+      case 'architect': return PALETTE.honeyDeep;
+      default:          return PALETTE.honey;
+    }
+  })();
+  // body
+  ctx.fillStyle = bodyColor;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, 4.2, 3.0, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = PALETTE.ink;
+  ctx.lineWidth = 1.0;
+  ctx.stroke();
+  // stripes (vary by role)
+  ctx.strokeStyle = PALETTE.ink;
+  ctx.lineWidth = role === 'guard' ? 1.4 : 0.9;
+  ctx.beginPath();
+  ctx.moveTo(0, -2.6); ctx.lineTo(0, 2.6);
+  if (role === 'guard') {
+    ctx.moveTo(-1.4, -2.4); ctx.lineTo(-1.4, 2.4);
+    ctx.moveTo( 1.4, -2.4); ctx.lineTo( 1.4, 2.4);
+  }
+  ctx.stroke();
+  // role accents
+  if (role === 'forager') {
+    ctx.fillStyle = PALETTE.rust;
+    ctx.beginPath(); ctx.arc(-3.5, 1.5, 0.9, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc( 3.5, 1.5, 0.9, 0, Math.PI * 2); ctx.fill();
+  } else if (role === 'nurse') {
+    // larva bundle below
+    ctx.fillStyle = PALETTE.paper;
+    ctx.beginPath();
+    ctx.ellipse(0, 3.4, 2.0, 1.2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = PALETTE.ink;
+    ctx.lineWidth = 0.7;
+    ctx.stroke();
+  } else if (role === 'striker') {
+    // motion lines behind
+    ctx.strokeStyle = PALETTE.ink;
+    ctx.lineWidth = 0.7;
+    ctx.globalAlpha = 0.55;
+    ctx.beginPath();
+    ctx.moveTo(-5, -1); ctx.lineTo(-7, -1);
+    ctx.moveTo(-5,  1); ctx.lineTo(-7,  1);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    // stinger
+    ctx.fillStyle = PALETTE.ink;
+    ctx.beginPath();
+    ctx.moveTo(0, 3.0); ctx.lineTo(-0.7, 4.5); ctx.lineTo(0.7, 4.5);
+    ctx.closePath(); ctx.fill();
+  } else if (role === 'architect') {
+    // wax flake
+    ctx.fillStyle = PALETTE.honeyLight;
+    drawHex(ctx, 0, 4.2, 1.6);
+    ctx.strokeStyle = PALETTE.ink;
+    ctx.lineWidth = 0.6;
+    drawHexStroke(ctx, 0, 4.2, 1.6);
+  } else if (role === 'guard') {
+    // big stinger
+    ctx.fillStyle = PALETTE.ink;
+    ctx.beginPath();
+    ctx.moveTo(0, 3.2); ctx.lineTo(-1.0, 5.0); ctx.lineTo(1.0, 5.0);
+    ctx.closePath(); ctx.fill();
+  }
+  ctx.restore();
 }
 
 function drawDrip(ctx, x1, y1, x2, y2) {
